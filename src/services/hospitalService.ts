@@ -350,13 +350,25 @@ export async function generateSlip(
   const humanDirection = generateHumanReadableDirection(department, isAccessible);
   const steps = generateStepsFromEntrance(department, isAccessible);
 
+  const waitMinutes = waitMap[department.category] ?? 20;
+  const peopleAhead = department.category === 'emergency' ? 0 : Math.max(1, Math.round(waitMinutes / 5));
+  const queueStatus = department.category === 'emergency'
+    ? 'in_progress'
+    : (waitMinutes <= 5 ? 'turn_soon' : 'waiting');
+
+  const authRaw = typeof window !== 'undefined' ? localStorage.getItem('vd-auth-user') : null;
+  const authUser = authRaw ? JSON.parse(authRaw) : null;
+  const isGuest = authUser ? Boolean(authUser.isGuest) : true;
+
   const slip: Slip = {
     id: `slip-${Date.now()}`,
     generatedAt: new Date().toISOString(),
     patientPurposeKey: purposeKey,
     department,
     token: generateToken(prefix),
-    estimatedWait: waitMap[department.category] ?? 20,
+    estimatedWait: waitMinutes,
+    peopleAhead,
+    status: queueStatus,
     steps,
     doctorName: department.doctorName,
     roomNumber: department.roomNumbers[0],
@@ -367,10 +379,130 @@ export async function generateSlip(
     patientAge,
     patientGender,
     accessibilityNeeds,
+    isGuest,
+    userId: authUser?.id,
     additionalNoteKey: department.category === 'emergency' ? 'slip.note_emergency' : undefined,
   };
 
+  await saveSlip(slip, isGuest);
+
   return slip;
+}
+
+const SLIPS_STORAGE_KEY = 'vd-patient-slips';
+const LATEST_SLIP_KEY = 'vd-latest-slip';
+
+/** Save or update a slip in persistent localStorage */
+export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
+  try {
+    const raw = localStorage.getItem(SLIPS_STORAGE_KEY);
+    const list: Slip[] = raw ? JSON.parse(raw) : [];
+
+    const authRaw = localStorage.getItem('vd-auth-user');
+    const authUser = authRaw ? JSON.parse(authRaw) : null;
+    const determinedIsGuest = isGuest ?? (authUser ? Boolean(authUser.isGuest) : true);
+
+    const enrichedSlip: Slip = {
+      ...slip,
+      isGuest: determinedIsGuest,
+      userId: authUser?.id,
+    };
+
+    const existingIndex = list.findIndex((s) => s.id === slip.id);
+    if (existingIndex >= 0) {
+      list[existingIndex] = enrichedSlip;
+    } else {
+      list.unshift(enrichedSlip);
+    }
+
+    localStorage.setItem(SLIPS_STORAGE_KEY, JSON.stringify(list));
+    localStorage.setItem(LATEST_SLIP_KEY, JSON.stringify(enrichedSlip));
+
+    // If registered user, also append to visits in authUser
+    if (authUser && !authUser.isGuest) {
+      const existingVisits = authUser.visits || [];
+      const hasVisit = existingVisits.some((v: any) => v.id === slip.id || v.tokenNumber === slip.token);
+      if (!hasVisit) {
+        authUser.visits = [
+          {
+            id: slip.id,
+            date: new Date(slip.generatedAt).toISOString().split('T')[0],
+            departmentName: slip.department.nameKey,
+            doctorName: slip.doctorName || slip.department.doctorName || 'Doctor on Duty',
+            tokenNumber: slip.token,
+            diagnosisSummary: `Outpatient consultation. Queue Token #${slip.token}. Room ${slip.roomNumber || slip.department.roomNumbers[0]}.`,
+            status: 'in_progress',
+          },
+          ...existingVisits,
+        ];
+        localStorage.setItem('vd-auth-user', JSON.stringify(authUser));
+      }
+    }
+
+    return enrichedSlip;
+  } catch (err) {
+    console.warn('Failed to save slip to localStorage', err);
+    return slip;
+  }
+}
+
+/** Retrieve a slip by ID or get the latest active slip */
+export async function getSlipById(id: string): Promise<Slip | null> {
+  await sleep(100);
+  try {
+    const raw = localStorage.getItem(SLIPS_STORAGE_KEY);
+    const list: Slip[] = raw ? JSON.parse(raw) : [];
+    const found = list.find((s) => s.id === id);
+    if (found) return found;
+
+    // Check latest slip
+    const latestRaw = localStorage.getItem(LATEST_SLIP_KEY);
+    if (latestRaw) {
+      const latest: Slip = JSON.parse(latestRaw);
+      if (latest.id === id || id === 'latest') return latest;
+    }
+
+    // Fallback realistic mock slip if ID doesn't exist
+    const dept = DEPARTMENTS[1] || DEPARTMENTS[0];
+    const fallbackSlip: Slip = {
+      id: id || `slip-${Date.now()}`,
+      generatedAt: new Date().toISOString(),
+      patientPurposeKey: 'purpose.new_opd',
+      department: dept,
+      token: 'CARD-1042',
+      estimatedWait: 15,
+      peopleAhead: 3,
+      status: 'waiting',
+      steps: generateStepsFromEntrance(dept, false),
+      doctorName: dept.doctorName,
+      roomNumber: dept.roomNumbers[0],
+      floor: dept.floor,
+      wing: dept.wing,
+      humanReadableDirection: generateHumanReadableDirection(dept, false),
+      patientName: 'Ramesh Sharma',
+      patientAge: 68,
+      patientGender: 'Male',
+      isGuest: false,
+    };
+    return fallbackSlip;
+  } catch {
+    return null;
+  }
+}
+
+/** Get list of all previous slips for the patient */
+export async function getPatientSlipHistory(userId?: string): Promise<Slip[]> {
+  await sleep(150);
+  try {
+    const raw = localStorage.getItem(SLIPS_STORAGE_KEY);
+    const list: Slip[] = raw ? JSON.parse(raw) : [];
+    if (userId) {
+      return list.filter((s) => s.userId === userId || !s.userId);
+    }
+    return list;
+  } catch {
+    return [];
+  }
 }
 
 /** Get all known locations for wayfinding */

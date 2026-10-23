@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Accessibility } from 'lucide-react';
+import { Home, Accessibility, Ticket } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { AccessibilityPanel } from './AccessibilityPanel';
 
@@ -43,6 +43,16 @@ export function AppHeader({ showHome = false, title }: AppHeaderProps) {
           <span className="font-bold text-[var(--color-primary-500)] text-base sm:text-lg min-w-0 flex-1 truncate mr-1">
             {title ?? t('app.name')}
           </span>
+
+          {/* My Visits / History link */}
+          <Link
+            to="/patient/history"
+            className="btn btn-ghost btn-icon btn-sm flex-shrink-0"
+            aria-label={t('history.page_title')}
+            title={t('history.page_title')}
+          >
+            <Ticket size={19} aria-hidden="true" />
+          </Link>
 
           {/* Language switcher */}
           <LanguageSwitcher />

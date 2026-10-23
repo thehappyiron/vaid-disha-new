@@ -4,7 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 
 // Pages
 import { RoleSelectionPage } from './pages/RoleSelectionPage';
-import { PatientStartPage, EmergencyPage, PatientVisitPage } from './pages/patient';
+import { PatientStartPage, EmergencyPage, PatientVisitPage, PatientHistoryPage } from './pages/patient';
 import { StaffLoginPage, StaffDashboardPage } from './pages/staff';
 import { AdminComingSoonPage } from './pages/admin';
 import { PurposePage } from './pages/PurposePage';
@@ -27,6 +27,13 @@ export function App() {
             <Route path="/patient/start" element={<PatientStartPage />} />
             <Route path="/patient/emergency" element={<EmergencyPage />} />
             <Route path="/patient/visit" element={<PatientVisitPage />} />
+            <Route path="/patient/history" element={<PatientHistoryPage />} />
+
+            {/* Patient slip views: both /patient/slip/:id and legacy /slip */}
+            <Route path="/patient/slip/:id" element={<SlipPage />} />
+            <Route path="/patient/slip" element={<SlipPage />} />
+            <Route path="/slip" element={<SlipPage />} />
+            <Route path="/slip/:id" element={<SlipPage />} />
 
             {/* Screen D: Staff login & Staff dashboard */}
             <Route path="/staff/login" element={<StaffLoginPage />} />
@@ -35,10 +42,9 @@ export function App() {
             {/* Hospital Admin Coming Soon */}
             <Route path="/admin/coming-soon" element={<AdminComingSoonPage />} />
 
-            {/* Patient navigation & slip flow */}
+            {/* Patient navigation & legacy route aliases */}
             <Route path="/purpose" element={<PurposePage />} />
             <Route path="/department" element={<DepartmentPage />} />
-            <Route path="/slip" element={<SlipPage />} />
             <Route path="/wayfinding" element={<WayfindingPage />} />
 
             {/* UI Component Library Demo */}

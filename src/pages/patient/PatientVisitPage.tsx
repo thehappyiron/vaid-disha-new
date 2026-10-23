@@ -273,7 +273,7 @@ export function PatientVisitPage() {
     try {
       setGenerating(true);
       const slip = await generateSlip(visitData);
-      navigate('/slip', { state: { slip } });
+      navigate(`/patient/slip/${slip.id}`, { state: { slip } });
     } catch {
       alert('Unable to generate slip. Please try again.');
     } finally {

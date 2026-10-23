@@ -66,6 +66,8 @@ export interface NavigationStep {
   directionIcon: 'arrow-up' | 'arrow-right' | 'arrow-left' | 'corner-right-up' | 'map-pin' | 'elevator' | 'stairs';
 }
 
+export type SlipStatus = 'waiting' | 'turn_soon' | 'in_progress' | 'completed';
+
 export interface Slip {
   id: string;
   generatedAt: string;      // ISO timestamp
@@ -73,6 +75,8 @@ export interface Slip {
   department: Department;
   token: string;            // e.g. "OPD-1042"
   estimatedWait: number;    // minutes
+  peopleAhead?: number;     // Patients ahead in queue
+  status?: SlipStatus;      // Live queue status
   steps: NavigationStep[];
   additionalNoteKey?: string;
   doctorName?: string;
@@ -84,6 +88,8 @@ export interface Slip {
   patientAge?: number;
   patientGender?: string;
   accessibilityNeeds?: AccessibilityNeedId[];
+  isGuest?: boolean;
+  userId?: string;
 }
 
 export interface WayfindingResult {

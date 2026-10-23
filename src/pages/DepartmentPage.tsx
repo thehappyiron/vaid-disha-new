@@ -46,7 +46,7 @@ export function DepartmentPage() {
     try {
       setGeneratingSlip(dept.id);
       const slip = await generateSlip(purposeId, dept.id);
-      navigate('/slip', { state: { slip } });
+      navigate(`/patient/slip/${slip.id}`, { state: { slip } });
     } catch {
       setError(true);
     } finally {
