@@ -35,6 +35,7 @@ import {
   Input,
   StatusBadge,
   EmergencyCard,
+  OptionCard,
 } from '../../components/ui';
 import {
   getAllDepartments,
@@ -516,58 +517,29 @@ export function PatientVisitPage() {
                 const isChecked = visitData.accessibilityNeeds.includes(id);
 
                 return (
-                  <div
+                  <OptionCard
                     key={id}
                     role="checkbox"
-                    aria-checked={isChecked}
-                    tabIndex={0}
+                    ariaChecked={isChecked}
+                    selected={isChecked}
                     onClick={() => toggleAccessibilityNeed(id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        toggleAccessibilityNeed(id);
-                      }
-                    }}
-                    className={[
-                      'card card-interactive p-4 border-2 transition-all flex items-start justify-between gap-3 min-w-0 cursor-pointer',
-                      isChecked
-                        ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40 shadow-sm'
-                        : 'border-[var(--color-border)] hover:border-[var(--color-primary-300)]',
-                    ].join(' ')}
-                  >
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                    icon={icon}
+                    title={label}
+                    description={desc}
+                    rightSlot={
                       <div
                         className={[
-                          'w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
+                          'w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0',
                           isChecked
-                            ? 'bg-[var(--color-primary-500)] text-white'
-                            : 'bg-[var(--color-surface-2)] text-[var(--color-primary-600)]',
+                            ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)] text-white'
+                            : 'border-[var(--color-neutral-400)] bg-white',
                         ].join(' ')}
+                        aria-hidden="true"
                       >
-                        {icon}
+                        {isChecked && <Check size={16} strokeWidth={3} />}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-bold text-base sm:text-lg text-[var(--color-text)] leading-tight block break-words">
-                          {label}
-                        </span>
-                        <span className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1 block leading-snug break-words">
-                          {desc}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div
-                      className={[
-                        'w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 mt-1',
-                        isChecked
-                          ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)] text-white'
-                          : 'border-[var(--color-neutral-400)] bg-white',
-                      ].join(' ')}
-                      aria-hidden="true"
-                    >
-                      {isChecked && <Check size={16} strokeWidth={3} />}
-                    </div>
-                  </div>
+                    }
+                  />
                 );
               })}
             </div>
@@ -636,38 +608,29 @@ export function PatientVisitPage() {
                 const isSelected = visitData.purposeId === id;
 
                 return (
-                  <button
+                  <OptionCard
                     key={id}
-                    type="button"
                     role="radio"
-                    aria-checked={isSelected}
+                    ariaChecked={isSelected}
+                    selected={isSelected}
                     onClick={() => handleSelectPurpose(id)}
-                    className={[
-                      'card card-interactive p-4 border-2 transition-all flex items-start gap-3.5 text-left min-w-0',
-                      isSelected
-                        ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40 shadow-sm'
-                        : 'border-[var(--color-border)] hover:border-[var(--color-primary-300)]',
-                    ].join(' ')}
-                  >
-                    <div
-                      className={[
-                        'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
-                        isSelected
-                          ? 'bg-[var(--color-primary-500)] text-white'
-                          : 'bg-[var(--color-surface-2)] text-[var(--color-primary-600)]',
-                      ].join(' ')}
-                    >
-                      {icon}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="font-bold text-base sm:text-lg text-[var(--color-text)] leading-tight block break-words">
-                        {title}
-                      </span>
-                      <span className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1 block leading-snug break-words">
-                        {desc}
-                      </span>
-                    </div>
-                  </button>
+                    icon={icon}
+                    title={title}
+                    description={desc}
+                    rightSlot={
+                      <div
+                        className={[
+                          'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0',
+                          isSelected
+                            ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)] text-white'
+                            : 'border-[var(--color-neutral-400)] bg-white',
+                        ].join(' ')}
+                        aria-hidden="true"
+                      >
+                        {isSelected && <Check size={14} strokeWidth={3} />}
+                      </div>
+                    }
+                  />
                 );
               })}
             </div>
@@ -692,35 +655,19 @@ export function PatientVisitPage() {
             </div>
 
             {/* "I don't know – help me choose" Card / CTA */}
-            <div
+            <OptionCard
               onClick={() => setShowSymptomHelper(!showSymptomHelper)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setShowSymptomHelper(!showSymptomHelper);
-                }
-              }}
-              className="card card-interactive p-4 border-2 border-[var(--color-accent-500)] bg-[var(--color-accent-50)] shadow-sm flex items-center justify-between gap-3 min-w-0 cursor-pointer"
-            >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-10 h-10 rounded-xl bg-[var(--color-accent-500)] text-white flex items-center justify-center shrink-0">
-                  <Sparkles size={20} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <span className="font-bold text-sm sm:text-base text-[var(--color-accent-950)] leading-tight block break-words">
-                    {t('patient_visit.help_choose_btn')}
-                  </span>
-                  <span className="text-xs text-[var(--color-accent-900)] mt-0.5 block break-words">
-                    {t('patient_visit.help_choose_desc')}
-                  </span>
-                </div>
-              </div>
-              <Button variant="secondary" size="sm" className="shrink-0 text-xs">
-                {showSymptomHelper ? t('common.close') : t('common.select')}
-              </Button>
-            </div>
+              icon={<Sparkles size={22} aria-hidden="true" />}
+              iconBgClass="bg-[var(--color-accent-500)] text-white shadow-sm"
+              title={t('patient_visit.help_choose_btn')}
+              description={t('patient_visit.help_choose_desc')}
+              className="border-[var(--color-accent-500)] bg-[var(--color-accent-50)]"
+              rightSlot={
+                <Button variant="secondary" size="sm" className="shrink-0 text-xs">
+                  {showSymptomHelper ? t('common.close') : t('common.select')}
+                </Button>
+              }
+            />
 
             {/* Inline Symptom Matching Tool */}
             {showSymptomHelper && (
@@ -848,11 +795,11 @@ export function PatientVisitPage() {
                   const isSelected = visitData.departmentId === dept.id;
 
                   return (
-                    <button
+                    <OptionCard
                       key={dept.id}
-                      type="button"
                       role="radio"
-                      aria-checked={isSelected}
+                      ariaChecked={isSelected}
+                      selected={isSelected}
                       onClick={() =>
                         setVisitData({
                           ...visitData,
@@ -860,49 +807,32 @@ export function PatientVisitPage() {
                           doctorName: dept.doctorName,
                         })
                       }
-                      className={[
-                        'card card-interactive p-4 border-2 transition-all flex items-start justify-between gap-3 text-left min-w-0',
-                        isSelected
-                          ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40 shadow-sm'
-                          : 'border-[var(--color-border)] hover:border-[var(--color-primary-300)]',
-                      ].join(' ')}
-                    >
-                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                      icon={<Stethoscope size={24} aria-hidden="true" />}
+                      title={t(dept.nameKey)}
+                      description={dept.doctorName}
+                      badges={[
+                        <div key="loc" className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--color-text-muted)] font-medium pt-0.5">
+                          <span>{t('common.building')} {dept.building}</span>
+                          <span>•</span>
+                          <span>{t('common.floor')} {dept.floor}</span>
+                          <span>•</span>
+                          <span>Room {dept.roomNumbers[0]} ({dept.wing})</span>
+                        </div>
+                      ]}
+                      rightSlot={
                         <div
                           className={[
-                            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5',
+                            'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0',
                             isSelected
-                              ? 'bg-[var(--color-primary-500)] text-white'
-                              : 'bg-[var(--color-surface-2)] text-[var(--color-primary-600)]',
+                              ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)] text-white'
+                              : 'border-[var(--color-neutral-400)] bg-white',
                           ].join(' ')}
+                          aria-hidden="true"
                         >
-                          <Stethoscope size={22} aria-hidden="true" />
+                          {isSelected && <Check size={14} strokeWidth={3} />}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <span className="font-bold text-base sm:text-lg text-[var(--color-text)] leading-tight block break-words">
-                            {t(dept.nameKey)}
-                          </span>
-                          <span className="text-xs sm:text-sm text-[var(--color-primary-700)] font-semibold mt-0.5 block break-words">
-                            {dept.doctorName}
-                          </span>
-                          <span className="text-xs text-[var(--color-text-muted)] mt-1 block break-words">
-                            {t('common.building')} {dept.building}, {t('common.floor')} {dept.floor} — Room {dept.roomNumbers[0]} ({dept.wing})
-                          </span>
-                        </div>
-                      </div>
-
-                      <div
-                        className={[
-                          'w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-1',
-                          isSelected
-                            ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)] text-white'
-                            : 'border-[var(--color-neutral-400)] bg-white',
-                        ].join(' ')}
-                        aria-hidden="true"
-                      >
-                        {isSelected && <Check size={14} strokeWidth={3} />}
-                      </div>
-                    </button>
+                      }
+                    />
                   );
                 })
               )}

@@ -27,7 +27,7 @@ export function AppHeader({ showHome = false, title }: AppHeaderProps) {
         role="banner"
         className="sticky top-0 z-30 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]"
       >
-        <div className="max-w-3xl mx-auto px-4 py-2.5 flex items-center gap-2">
+        <div className="max-w-md mx-auto px-4 py-2 flex items-center gap-1.5 sm:gap-2">
           {/* Home link */}
           {showHome && (
             <Link
@@ -40,7 +40,7 @@ export function AppHeader({ showHome = false, title }: AppHeaderProps) {
           )}
 
           {/* App name / title */}
-          <span className="font-bold text-[var(--color-primary-500)] text-lg flex-shrink-0 mr-auto">
+          <span className="font-bold text-[var(--color-primary-500)] text-base sm:text-lg min-w-0 flex-1 truncate mr-1">
             {title ?? t('app.name')}
           </span>
 

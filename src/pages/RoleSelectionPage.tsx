@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { LANGUAGES, type LanguageCode } from '../i18n';
 import { BaseLayout } from '../components/layout';
-import { Button, StatusBadge } from '../components/ui';
+import { Button, StatusBadge, OptionCard } from '../components/ui';
 
 const STORAGE_LANG_CHOSEN = 'vd-lang-selected';
 
@@ -93,63 +93,42 @@ export function RoleSelectionPage() {
               const isSpeaking = speakingCode === lang.code;
 
               return (
-                <div
+                <OptionCard
                   key={lang.code}
-                  className={[
-                    'card card-interactive p-4 flex items-center justify-between gap-3 border-2 transition-all',
-                    isSelected
-                      ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40 shadow-md'
-                      : 'border-[var(--color-border)] hover:border-[var(--color-primary-300)]',
-                  ].join(' ')}
+                  as="div"
+                  selected={isSelected}
                   onClick={() => handleSelectLanguage(lang.code)}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={isSelected}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleSelectLanguage(lang.code);
-                    }
-                  }}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div
+                  ariaLabel={`${lang.nativeLabel} - ${lang.code === 'en' ? 'English' : lang.code === 'hi' ? 'Hindi' : 'Marathi'}`}
+                  ariaPressed={isSelected}
+                  icon={
+                    <div className="font-bold text-base">
+                      {isSelected ? <Check size={22} aria-hidden="true" /> : lang.code.toUpperCase()}
+                    </div>
+                  }
+                  iconBgClass={
+                    isSelected
+                      ? 'bg-[var(--color-primary-500)] text-white'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                  }
+                  title={lang.nativeLabel}
+                  description={lang.code === 'en' ? 'English' : lang.code === 'hi' ? 'Hindi' : 'Marathi'}
+                  rightSlot={
+                    <button
+                      type="button"
+                      onClick={(e) => speakLanguage(lang.nativeLabel, lang.code, e)}
                       className={[
-                        'w-10 h-10 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0',
-                        isSelected
-                          ? 'bg-[var(--color-primary-500)] text-white'
-                          : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]',
+                        'btn btn-icon btn-sm rounded-full shrink-0 transition-transform active:scale-95',
+                        isSpeaking
+                          ? 'btn-primary animate-pulse'
+                          : 'btn-ghost border border-[var(--color-border)]',
                       ].join(' ')}
+                      aria-label={`${t('language_select.listen_label')} ${lang.nativeLabel}`}
+                      title={`${t('language_select.listen_label')} ${lang.nativeLabel}`}
                     >
-                      {isSelected ? <Check size={20} aria-hidden="true" /> : lang.code.toUpperCase()}
-                    </div>
-
-                    <div className="flex flex-col">
-                      <span className="text-xl font-bold text-[var(--color-text)] leading-tight">
-                        {lang.nativeLabel}
-                      </span>
-                      <span className="text-sm text-[var(--color-text-muted)] font-medium">
-                        {lang.code === 'en' ? 'English' : lang.code === 'hi' ? 'Hindi' : 'Marathi'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Speaker TTS button */}
-                  <button
-                    type="button"
-                    onClick={(e) => speakLanguage(lang.nativeLabel, lang.code, e)}
-                    className={[
-                      'btn btn-icon btn-sm rounded-full flex-shrink-0 transition-transform active:scale-95',
-                      isSpeaking
-                        ? 'btn-primary animate-pulse'
-                        : 'btn-ghost border border-[var(--color-border)]',
-                    ].join(' ')}
-                    aria-label={`${t('language_select.listen_label')} ${lang.nativeLabel}`}
-                    title={`${t('language_select.listen_label')} ${lang.nativeLabel}`}
-                  >
-                    <Volume2 size={20} className={isSpeaking ? 'text-white' : 'text-[var(--color-primary-500)]'} />
-                  </button>
-                </div>
+                      <Volume2 size={20} className={isSpeaking ? 'text-white' : 'text-[var(--color-primary-500)]'} />
+                    </button>
+                  }
+                />
               );
             })}
           </div>
@@ -222,118 +201,60 @@ export function RoleSelectionPage() {
         {/* Exactly 3 Equal-Sized Role Buttons */}
         <div className="flex flex-col gap-4 my-1" role="group" aria-label={t('roles.select_role_title')}>
           {/* 1. Patient Role (Most prominent) */}
-          <div
+          <OptionCard
+            highlighted
             onClick={() => navigate('/patient/start')}
-            role="button"
-            tabIndex={0}
-            aria-label={`${t('roles.patient_title')}: ${t('roles.patient_desc')}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                navigate('/patient/start');
-              }
-            }}
-            className="card card-interactive p-4 sm:p-5 border-2 border-[var(--color-primary-500)] bg-gradient-to-r from-[var(--color-primary-50)]/30 to-[var(--color-surface)] shadow-md hover:shadow-lg transition-all flex flex-col justify-between min-h-[140px] min-w-0"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-2.5 min-w-0">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-[var(--color-primary-500)] text-white flex items-center justify-center flex-shrink-0 shadow-sm p-2.5">
-                  <User size={26} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-[var(--color-text)] leading-tight break-words">
-                    {t('roles.patient_title')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium mt-1 break-words">
-                    {t('roles.patient_desc')}
-                  </p>
-                </div>
-              </div>
+            ariaLabel={`${t('roles.patient_title')}: ${t('roles.patient_desc')}`}
+            icon={<User size={26} aria-hidden="true" />}
+            iconBgClass="bg-[var(--color-primary-500)] text-white shadow-sm"
+            title={t('roles.patient_title')}
+            description={t('roles.patient_desc')}
+            badge={
               <StatusBadge
                 variant="info"
                 label={t('roles.patient_badge')}
                 icon={<Sparkles size={13} aria-hidden="true" />}
-                className="shrink-0 self-start sm:self-auto"
               />
-            </div>
-
-            <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-[var(--color-border)] text-[var(--color-primary-500)] font-bold text-sm">
-              <span>{t('common.continue')}</span>
-              <ArrowRight size={18} aria-hidden="true" />
-            </div>
-          </div>
+            }
+            footer={
+              <div className="flex items-center justify-end gap-1 text-[var(--color-primary-500)] font-bold text-sm">
+                <span>{t('common.continue')}</span>
+                <ArrowRight size={18} aria-hidden="true" />
+              </div>
+            }
+          />
 
           {/* 2. Hospital Staff Role */}
-          <div
+          <OptionCard
             onClick={() => navigate('/staff/login')}
-            role="button"
-            tabIndex={0}
-            aria-label={`${t('roles.staff_title')}: ${t('roles.staff_desc')}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                navigate('/staff/login');
-              }
-            }}
-            className="card card-interactive p-4 sm:p-5 border-2 border-[var(--color-border)] hover:border-[var(--color-primary-400)] shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[140px] min-w-0"
-          >
-            <div className="flex items-start justify-between gap-3 min-w-0">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-[var(--color-surface-2)] text-[var(--color-primary-600)] flex items-center justify-center flex-shrink-0 p-2.5">
-                  <Stethoscope size={26} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-[var(--color-text)] leading-tight break-words">
-                    {t('roles.staff_title')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium mt-1 break-words">
-                    {t('roles.staff_desc')}
-                  </p>
-                </div>
+            ariaLabel={`${t('roles.staff_title')}: ${t('roles.staff_desc')}`}
+            icon={<Stethoscope size={26} aria-hidden="true" />}
+            iconBgClass="bg-[var(--color-surface-2)] text-[var(--color-primary-600)]"
+            title={t('roles.staff_title')}
+            description={t('roles.staff_desc')}
+            footer={
+              <div className="flex items-center justify-end gap-1 text-[var(--color-primary-500)] font-bold text-sm">
+                <span>{t('common.continue')}</span>
+                <ArrowRight size={18} aria-hidden="true" />
               </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-[var(--color-border)] text-[var(--color-primary-500)] font-bold text-sm">
-              <span>{t('common.continue')}</span>
-              <ArrowRight size={18} aria-hidden="true" />
-            </div>
-          </div>
+            }
+          />
 
           {/* 3. Hospital Administration Role */}
-          <div
+          <OptionCard
             onClick={() => navigate('/admin/coming-soon')}
-            role="button"
-            tabIndex={0}
-            aria-label={`${t('roles.admin_title')}: ${t('roles.admin_desc')}`}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                navigate('/admin/coming-soon');
-              }
-            }}
-            className="card card-interactive p-4 sm:p-5 border-2 border-[var(--color-border)] hover:border-[var(--color-primary-400)] shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[140px] min-w-0"
-          >
-            <div className="flex items-start justify-between gap-3 min-w-0">
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-12 h-12 rounded-xl bg-[var(--color-surface-2)] text-[var(--color-neutral-700)] flex items-center justify-center flex-shrink-0 p-2.5">
-                  <Building2 size={26} aria-hidden="true" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-lg sm:text-xl font-bold text-[var(--color-text)] leading-tight break-words">
-                    {t('roles.admin_title')}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium mt-1 break-words">
-                    {t('roles.admin_desc')}
-                  </p>
-                </div>
+            ariaLabel={`${t('roles.admin_title')}: ${t('roles.admin_desc')}`}
+            icon={<Building2 size={26} aria-hidden="true" />}
+            iconBgClass="bg-[var(--color-surface-2)] text-[var(--color-neutral-700)]"
+            title={t('roles.admin_title')}
+            description={t('roles.admin_desc')}
+            footer={
+              <div className="flex items-center justify-end gap-1 text-[var(--color-primary-500)] font-bold text-sm">
+                <span>{t('common.continue')}</span>
+                <ArrowRight size={18} aria-hidden="true" />
               </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-[var(--color-border)] text-[var(--color-primary-500)] font-bold text-sm">
-              <span>{t('common.continue')}</span>
-              <ArrowRight size={18} aria-hidden="true" />
-            </div>
-          </div>
+            }
+          />
         </div>
 
         {/* Emergency Assistance Quick Link */}

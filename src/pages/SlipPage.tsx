@@ -79,10 +79,10 @@ export function SlipPage() {
           >
             <TriangleAlert
               size={24}
-              className="text-[var(--color-danger)] flex-shrink-0 mt-0.5"
+              className="text-[var(--color-danger)] shrink-0 mt-0.5"
               aria-hidden="true"
             />
-            <p className="font-semibold text-[var(--color-danger)] text-sm sm:text-base break-words min-w-0 flex-1">
+            <p className="font-semibold text-[var(--color-danger)] text-sm sm:text-base break-words min-w-[12ch] flex-1">
               {t('slip.note_emergency')}
             </p>
           </div>
@@ -95,7 +95,7 @@ export function SlipPage() {
         >
           {/* Header row */}
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4 min-w-0">
-            <div className="min-w-0 flex-1">
+            <div className="min-w-[12ch] flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <span className="section-label flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[var(--color-primary-600)]">
                   <Ticket size={15} aria-hidden="true" />
@@ -120,7 +120,7 @@ export function SlipPage() {
             {/* Success check */}
             <CheckCircle
               size={36}
-              className="text-[var(--color-accent)] flex-shrink-0"
+              className="text-[var(--color-accent)] shrink-0"
               aria-hidden="true"
             />
           </div>
@@ -142,10 +142,10 @@ export function SlipPage() {
             <div className="flex items-start gap-3 min-w-0">
               <Building2
                 size={20}
-                className="text-[var(--color-primary-500)] flex-shrink-0 mt-0.5"
+                className="text-[var(--color-primary-500)] shrink-0 mt-0.5"
                 aria-hidden="true"
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[12ch] flex-1">
                 <p className="text-xs text-[var(--color-text-muted)] font-medium">
                   {t('slip.department')}
                 </p>
@@ -160,10 +160,10 @@ export function SlipPage() {
               <div className="flex items-start gap-3 min-w-0">
                 <Stethoscope
                   size={20}
-                  className="text-[var(--color-primary-500)] flex-shrink-0 mt-0.5"
+                  className="text-[var(--color-primary-500)] shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[12ch] flex-1">
                   <p className="text-xs text-[var(--color-text-muted)] font-medium">
                     {t('slip.doctor')}
                   </p>
@@ -178,10 +178,10 @@ export function SlipPage() {
             <div className="flex items-start gap-3 min-w-0">
               <MapPin
                 size={20}
-                className="text-[var(--color-primary-500)] flex-shrink-0 mt-0.5"
+                className="text-[var(--color-primary-500)] shrink-0 mt-0.5"
                 aria-hidden="true"
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[12ch] flex-1">
                 <p className="text-xs text-[var(--color-text-muted)] font-medium">
                   {t('slip.location')}
                 </p>
@@ -198,10 +198,10 @@ export function SlipPage() {
             <div className="flex items-start gap-3 min-w-0">
               <Clock
                 size={20}
-                className="text-[var(--color-primary-500)] flex-shrink-0 mt-0.5"
+                className="text-[var(--color-primary-500)] shrink-0 mt-0.5"
                 aria-hidden="true"
               />
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[12ch] flex-1">
                 <p className="text-xs text-[var(--color-text-muted)] font-medium">
                   {t('slip.estimated_wait')}
                 </p>

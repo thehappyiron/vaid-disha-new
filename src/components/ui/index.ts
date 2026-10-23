@@ -5,3 +5,4 @@ export * from './StatusBadge';
 export * from './PageHeader';
 export * from './BottomActionBar';
 export * from './EmergencyCard';
+export * from './OptionCard';

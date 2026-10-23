@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Building2, MapPin, Clock, ChevronRight } from 'lucide-react';
+import { Building2, MapPin, Clock } from 'lucide-react';
 import { BaseLayout } from '../components/layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { PageHeader } from '../components/ui';
+import { PageHeader, OptionCard } from '../components/ui';
 import { getDepartmentsByPurpose, generateSlip } from '../services/hospitalService';
 import type { Department } from '../types';
 
@@ -79,57 +79,34 @@ export function DepartmentPage() {
             {departments.map((dept) => {
               const isGenerating = generatingSlip === dept.id;
               return (
-                <li key={dept.id} role="listitem" className="min-w-0">
-                  <button
+                <li key={dept.id} role="listitem">
+                  <OptionCard
                     onClick={() => handleSelectDepartment(dept)}
                     disabled={!!generatingSlip}
-                    className="w-full card card-interactive text-left p-4 sm:p-5 border-2 border-[var(--color-border)] hover:border-[var(--color-primary-500)] disabled:opacity-60 disabled:cursor-wait min-w-0"
-                    aria-label={t(dept.nameKey)}
-                    aria-busy={isGenerating}
-                  >
-                    <div className="flex items-start justify-between gap-3 min-w-0">
-                      <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                        {/* Building icon */}
-                        <div
-                          className="w-11 h-11 rounded-xl bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center shrink-0 mt-0.5"
-                          aria-hidden="true"
-                        >
-                          <Building2 size={22} />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-base sm:text-lg text-[var(--color-text)] leading-tight break-words">
-                            {isGenerating ? t('common.loading') : t(dept.nameKey)}
-                          </p>
-                          <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-1 break-words">
-                            {t(dept.descriptionKey)}
-                          </p>
-
-                          {/* Meta badges */}
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 pt-2 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)] min-w-0" aria-hidden="true">
-                            <span className="flex items-center gap-1 shrink-0 font-medium">
-                              <Building2 size={13} className="shrink-0" />
-                              {t('common.building')} {dept.building}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1 shrink-0 font-medium">
-                              <MapPin size={13} className="shrink-0" />
-                              {floorLabel(dept.floor)}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1 shrink-0 font-medium">
-                              <Clock size={13} className="shrink-0" />
-                              ~{dept.estimatedWalkMinutes} {t('common.minutes_short')}
-                            </span>
-                          </div>
-                        </div>
+                    ariaLabel={t(dept.nameKey)}
+                    icon={<Building2 size={24} />}
+                    title={isGenerating ? t('common.loading') : t(dept.nameKey)}
+                    description={t(dept.descriptionKey)}
+                    chevron={true}
+                    badges={[
+                      <div key="meta" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)] font-medium pt-1">
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Building2 size={13} className="shrink-0" />
+                          {t('common.building')} {dept.building}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 shrink-0">
+                          <MapPin size={13} className="shrink-0" />
+                          {floorLabel(dept.floor)}
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 shrink-0">
+                          <Clock size={13} className="shrink-0" />
+                          ~{dept.estimatedWalkMinutes} {t('common.minutes_short')}
+                        </span>
                       </div>
-
-                      <span className="text-[var(--color-text-muted)] shrink-0 mt-1" aria-hidden="true">
-                        <ChevronRight size={20} />
-                      </span>
-                    </div>
-                  </button>
+                    ]}
+                  />
                 </li>
               );
             })}

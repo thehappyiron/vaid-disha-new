@@ -34,7 +34,7 @@ export function LanguageSwitcher({ className = '' }: LanguageSwitcherProps) {
             className={[
               'btn btn-sm',
               isActive ? 'btn-primary' : 'btn-ghost',
-              'min-h-[2.5rem] px-3 text-sm font-semibold',
+              'min-h-[2.25rem] px-2 sm:px-3 text-xs sm:text-sm font-semibold shrink-0',
             ].join(' ')}
           >
             {lang.nativeLabel}

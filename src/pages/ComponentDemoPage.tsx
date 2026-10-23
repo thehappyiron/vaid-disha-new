@@ -25,6 +25,7 @@ import {
   PageHeader,
   BottomActionBar,
   EmergencyCard,
+  OptionCard,
 } from '../components/ui';
 import { BaseLayout } from '../components/layout';
 import { useAccessibility } from '../context/AccessibilityContext';
@@ -385,6 +386,19 @@ export function ComponentDemoPage() {
                 </p>
               </CardBody>
             </Card>
+
+            {/* OptionCard Demo */}
+            <div className="md:col-span-2">
+              <h3 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">OptionCard (Vertical Grid Layout)</h3>
+              <OptionCard
+                icon={<Sparkles size={24} />}
+                title="Accessible Option Card"
+                description="Designed with a CSS Grid layout ensuring icons never squeeze titles and descriptions span the full width."
+                badge={<StatusBadge variant="info" label="Recommended" />}
+                chevron={true}
+                onClick={() => {}}
+              />
+            </div>
           </div>
         </section>
 

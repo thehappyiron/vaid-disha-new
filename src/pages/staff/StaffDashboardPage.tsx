@@ -15,6 +15,7 @@ import {
   Button,
   PageHeader,
   StatusBadge,
+  OptionCard,
 } from '../../components/ui';
 import { MOCK_PATIENT_QUEUE } from '../../data/mockUserData';
 
@@ -50,28 +51,14 @@ export function StaffDashboardPage() {
         />
 
         {/* Staff Profile Card */}
-        <Card className="bg-[var(--color-primary-50)] border-2 border-[var(--color-primary-200)] p-4 shadow-sm min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-[var(--color-primary-500)] text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
-                <Stethoscope size={24} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-xs uppercase font-bold text-[var(--color-primary-800)] tracking-wide">
-                  {t('staff_dashboard.active_staff')}
-                </span>
-                <h3 className="text-lg font-bold text-[var(--color-primary-950)] leading-tight break-words">
-                  {user?.name || 'Dr. Ananya Iyer'}
-                </h3>
-                <p className="text-xs text-[var(--color-primary-900)] font-medium break-words mt-0.5">
-                  ID: {user?.staffId || 'STF-101'} • {user?.designation || 'Senior Medical Officer'} • {user?.department || 'General OPD'}
-                </p>
-              </div>
-            </div>
-
-            <StatusBadge variant="success" label="On Duty" icon={<UserCheck size={14} />} className="self-start sm:self-auto shrink-0" />
-          </div>
-        </Card>
+        <OptionCard
+          icon={<Stethoscope size={24} />}
+          iconBgClass="bg-[var(--color-primary-500)] text-white shadow-sm"
+          title={user?.name || 'Dr. Ananya Iyer'}
+          description={`ID: ${user?.staffId || 'STF-101'} • ${user?.designation || 'Senior Medical Officer'} • ${user?.department || 'General OPD'}`}
+          badge={<StatusBadge variant="success" label="On Duty" icon={<UserCheck size={14} />} />}
+          className="bg-[var(--color-primary-50)] border-2 border-[var(--color-primary-200)]"
+        />
 
         {/* OPD Queue with vertical mobile layout and no duplicate (Guest) */}
         <div className="flex flex-col gap-3 min-w-0">

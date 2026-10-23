@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, ChevronRight } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { BaseLayout } from '../components/layout';
 import { DynamicIcon } from '../components/DynamicIcon';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { EmergencyCard, PageHeader } from '../components/ui';
+import { EmergencyCard, PageHeader, OptionCard } from '../components/ui';
 import { getPurposeOptions, searchPurposes } from '../services/hospitalService';
 import type { PurposeOption } from '../types';
 
@@ -156,39 +156,20 @@ export function PurposePage() {
                 </li>
               ) : (
                 standardPurposes.map((purpose) => (
-                  <li key={purpose.id} role="listitem" className="min-w-0">
-                    <button
+                  <li key={purpose.id} role="listitem">
+                    <OptionCard
                       onClick={() => handleSelect(purpose)}
-                      className="w-full card card-interactive text-left flex items-center justify-between gap-3 p-3.5 sm:p-4 border-2 border-[var(--color-border)] hover:border-[var(--color-primary-500)] min-h-[4rem] min-w-0"
-                      aria-label={t(purpose.labelKey)}
-                    >
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        {/* Icon */}
-                        <span
-                          className="w-11 h-11 rounded-xl bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center flex-shrink-0"
-                          aria-hidden="true"
-                        >
-                          <DynamicIcon
-                            name={purpose.icon}
-                            size={22}
-                            strokeWidth={2}
-                          />
-                        </span>
-
-                        {/* Label */}
-                        <span className="font-bold text-[var(--color-text)] text-base sm:text-lg leading-tight break-words min-w-0 flex-1">
-                          {t(purpose.labelKey)}
-                        </span>
-                      </div>
-
-                      {/* Arrow */}
-                      <span
-                        className="text-[var(--color-text-muted)] flex-shrink-0 ml-1"
-                        aria-hidden="true"
-                      >
-                        <ChevronRight size={20} />
-                      </span>
-                    </button>
+                      ariaLabel={t(purpose.labelKey)}
+                      icon={
+                        <DynamicIcon
+                          name={purpose.icon}
+                          size={22}
+                          strokeWidth={2}
+                        />
+                      }
+                      title={t(purpose.labelKey)}
+                      chevron={true}
+                    />
                   </li>
                 ))
               )}

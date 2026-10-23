@@ -23,6 +23,7 @@ import {
   Input,
   PageHeader,
   StatusBadge,
+  OptionCard,
 } from '../../components/ui';
 
 export function PatientStartPage() {
@@ -220,29 +221,21 @@ export function PatientStartPage() {
         </div>
 
         {/* Option 2: Continue as Guest */}
-        <Card interactive onClick={handleGuestEntry} className="p-4 sm:p-5 border-2 border-[var(--color-border)] min-w-0">
-          <div className="flex flex-wrap items-start justify-between gap-2.5 min-w-0">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="p-2.5 rounded-xl bg-[var(--color-surface-2)] text-[var(--color-text)] shrink-0">
-                <UserX size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-bold text-[var(--color-text)] leading-tight break-words">
-                  {t('patient_entry.guest_title')}
-                </h3>
-                <p className="text-sm text-[var(--color-text-muted)] font-medium mt-1 break-words">
-                  {t('patient_entry.guest_desc')}
-                </p>
-              </div>
+        <OptionCard
+          onClick={handleGuestEntry}
+          ariaLabel={`${t('patient_entry.guest_title')}: ${t('patient_entry.guest_desc')}`}
+          icon={<UserX size={24} aria-hidden="true" />}
+          iconBgClass="bg-[var(--color-surface-2)] text-[var(--color-text)]"
+          title={t('patient_entry.guest_title')}
+          description={t('patient_entry.guest_desc')}
+          badge={<StatusBadge variant="neutral" label="No Sign-in" />}
+          footer={
+            <div className="flex items-center justify-end gap-1 text-[var(--color-primary-500)] font-bold text-sm">
+              <span>{t('patient_entry.guest_btn')}</span>
+              <ArrowRight size={18} aria-hidden="true" />
             </div>
-            <StatusBadge variant="neutral" label="No Sign-in" className="shrink-0 self-start sm:self-auto" />
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-[var(--color-border)] flex items-center justify-end gap-1 text-[var(--color-primary-500)] font-bold text-sm">
-            <span>{t('patient_entry.guest_btn')}</span>
-            <ArrowRight size={18} aria-hidden="true" />
-          </div>
-        </Card>
+          }
+        />
       </div>
     </BaseLayout>
   );
