@@ -41,7 +41,7 @@ export function NavStepCard({ step }: NavStepCardProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1">
         <div className="flex items-start gap-3">
           {/* Direction icon */}
           <span
@@ -55,12 +55,12 @@ export function NavStepCard({ step }: NavStepCardProps) {
             {DIRECTION_ICONS[step.directionIcon]}
           </span>
 
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-[var(--color-text)] leading-snug break-words">
+          <div className="flex-1">
+            <p className="font-medium text-[var(--color-text)] leading-snug">
               {t(step.instructionKey, step.instructionParams ?? {})}
             </p>
             {step.landmark && (
-              <p className="text-sm text-[var(--color-text-muted)] mt-1 break-words">
+              <p className="text-sm text-[var(--color-text-muted)] mt-1">
                 📍 {step.landmark}
               </p>
             )}

@@ -63,7 +63,7 @@ export function StatusBadge({
       <span className="inline-flex shrink-0 items-center justify-center" aria-hidden="true">
         {iconElement}
       </span>
-      <span className="break-words line-clamp-2 min-w-0">
+      <span className="line-clamp-2">
         {label}
       </span>
     </span>

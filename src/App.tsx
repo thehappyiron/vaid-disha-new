@@ -4,7 +4,13 @@ import { AuthProvider } from './context/AuthContext';
 
 // Pages
 import { RoleSelectionPage } from './pages/RoleSelectionPage';
-import { PatientStartPage, EmergencyPage, PatientVisitPage, PatientHistoryPage } from './pages/patient';
+import {
+  PatientStartPage,
+  EmergencyPage,
+  PatientVisitPage,
+  PatientHistoryPage,
+  PatientGuidancePage,
+} from './pages/patient';
 import { StaffLoginPage, StaffDashboardPage } from './pages/staff';
 import { AdminComingSoonPage } from './pages/admin';
 import { PurposePage } from './pages/PurposePage';
@@ -28,6 +34,11 @@ export function App() {
             <Route path="/patient/emergency" element={<EmergencyPage />} />
             <Route path="/patient/visit" element={<PatientVisitPage />} />
             <Route path="/patient/history" element={<PatientHistoryPage />} />
+
+            {/* Patient Guidance / Find My Way */}
+            <Route path="/patient/guidance/:slipId" element={<PatientGuidancePage />} />
+            <Route path="/patient/guidance" element={<PatientGuidancePage />} />
+            <Route path="/wayfinding" element={<PatientGuidancePage />} />
 
             {/* Patient slip views: both /patient/slip/:id and legacy /slip */}
             <Route path="/patient/slip/:id" element={<SlipPage />} />

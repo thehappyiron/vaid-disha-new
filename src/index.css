@@ -309,12 +309,12 @@
     text-underline-offset: 3px;
   }
 
-  /* Universal text wrapping — overflow-wrap: break-word and hyphens: manual */
+  /* Universal text wrapping — Global Safety Net */
   *, *::before, *::after {
     overflow-wrap: break-word;
   }
 
-  body, h1, h2, h3, h4, h5, h6, p, span, button, a, label, li, input, select, textarea {
+  h1, h2, h3, h4, p, span, label, button, a, li {
     overflow-wrap: break-word;
     word-break: normal;
     hyphens: manual;

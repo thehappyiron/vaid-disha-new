@@ -41,7 +41,7 @@ export function Card({
 export function CardHeader({ children, className = '', ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`flex flex-wrap items-start justify-between gap-2.5 mb-3 min-w-0 ${className}`}
+      className={`flex flex-wrap items-start justify-between gap-2.5 mb-3 ${className}`}
       {...rest}
     >
       {children}
@@ -52,7 +52,7 @@ export function CardHeader({ children, className = '', ...rest }: HTMLAttributes
 export function CardTitle({ children, className = '', ...rest }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={`text-lg font-bold text-[var(--color-text)] leading-tight break-words min-w-0 ${className}`}
+      className={`text-lg font-bold text-[var(--color-text)] leading-tight ${className}`}
       {...rest}
     >
       {children}
@@ -62,7 +62,7 @@ export function CardTitle({ children, className = '', ...rest }: HTMLAttributes<
 
 export function CardBody({ children, className = '', ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={`text-[var(--color-text)] min-w-0 break-words ${className}`} {...rest}>
+    <div className={`text-[var(--color-text)] ${className}`} {...rest}>
       {children}
     </div>
   );
@@ -71,7 +71,7 @@ export function CardBody({ children, className = '', ...rest }: HTMLAttributes<H
 export function CardFooter({ children, className = '', ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={`mt-4 pt-3 border-t border-[var(--color-border)] flex flex-wrap items-center gap-2.5 min-w-0 ${className}`}
+      className={`mt-4 pt-3 border-t border-[var(--color-border)] flex flex-wrap items-center gap-2.5 ${className}`}
       {...rest}
     >
       {children}

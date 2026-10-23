@@ -373,17 +373,14 @@ export function PatientVisitPage() {
 
             {/* Registered user pre-filled banner */}
             {user && !user.isGuest && (
-              <div className="p-3.5 bg-blue-50 border-2 border-blue-200 rounded-xl flex items-start gap-3 shadow-sm min-w-0">
-                <ShieldCheck size={22} className="text-[var(--color-primary-500)] flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <div className="text-sm text-[var(--color-primary-950)] min-w-0 flex-1">
-                  <span className="font-bold block leading-tight">
-                    {t('patient_visit.registered_prefilled', { name: user.name })}
-                  </span>
-                  <span className="text-xs text-[var(--color-primary-800)] mt-0.5 block">
-                    You can edit these details or tap Next to keep them.
-                  </span>
-                </div>
-              </div>
+              <OptionCard
+                as="div"
+                icon={<ShieldCheck size={22} className="text-[var(--color-primary-500)]" aria-hidden="true" />}
+                iconBgClass="bg-blue-100 text-blue-800"
+                title={t('patient_visit.registered_prefilled', { name: user.name })}
+                description="You can edit these details or tap Next to keep them."
+                className="bg-blue-50 border-2 border-blue-200"
+              />
             )}
 
             <Card className="p-4 sm:p-6 border-2 border-[var(--color-border)] min-w-0 shadow-sm">
@@ -857,131 +854,148 @@ export function PatientVisitPage() {
               </p>
             </div>
 
-            <div className="flex flex-col gap-3 min-w-0">
+            <div className="flex flex-col gap-3">
               {/* Review Item 1: Patient Details */}
-              <Card className="p-4 border-2 border-[var(--color-border)] min-w-0">
-                <div className="flex items-start justify-between gap-3 min-w-0 mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <User size={18} className="text-[var(--color-primary-500)] shrink-0" />
+              <OptionCard
+                as="div"
+                icon={<User size={22} className="text-[var(--color-primary-500)]" />}
+                iconBgClass="bg-[var(--color-primary-50)]"
+                title={
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">
                       {t('patient_visit.review_patient')}
                     </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(1)}
-                    className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
-                    aria-label={`Edit ${t('patient_visit.review_patient')}`}
-                  >
-                    <Edit2 size={14} />
-                    <span>{t('patient_visit.edit')}</span>
-                  </button>
-                </div>
-                <div className="text-sm sm:text-base text-[var(--color-text)] min-w-0">
-                  <p className="font-bold text-base sm:text-lg break-words">
-                    {visitData.patientName || 'Guest Patient'}
-                  </p>
-                  <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-0.5">
-                    {visitData.patientAge ? `${visitData.patientAge} years` : 'Age: Not specified'} •{' '}
-                    {visitData.patientGender
-                      ? t(`patient_visit.gender_${visitData.patientGender}`)
-                      : 'Gender: Not specified'}
-                  </p>
-                </div>
-              </Card>
-
-              {/* Review Item 2: Accessibility Needs */}
-              <Card className="p-4 border-2 border-[var(--color-border)] min-w-0">
-                <div className="flex items-start justify-between gap-3 min-w-0 mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Accessibility size={18} className="text-[var(--color-primary-500)] shrink-0" />
-                    <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">
-                      {t('patient_visit.review_accessibility')}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(2)}
-                    className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
-                    aria-label={`Edit ${t('patient_visit.review_accessibility')}`}
-                  >
-                    <Edit2 size={14} />
-                    <span>{t('patient_visit.edit')}</span>
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-1.5 min-w-0">
-                  {visitData.accessibilityNeeds.map((need) => (
-                    <StatusBadge
-                      key={need}
-                      variant={need === 'none' ? 'neutral' : 'info'}
-                      label={t(`patient_visit.a11y_${need}`)}
-                    />
-                  ))}
-                </div>
-              </Card>
-
-              {/* Review Item 3: Purpose of Visit */}
-              <Card className="p-4 border-2 border-[var(--color-border)] min-w-0">
-                <div className="flex items-start justify-between gap-3 min-w-0 mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Heart size={18} className="text-[var(--color-primary-500)] shrink-0" />
-                    <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">
-                      {t('patient_visit.review_purpose')}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(3)}
-                    className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
-                    aria-label={`Edit ${t('patient_visit.review_purpose')}`}
-                  >
-                    <Edit2 size={14} />
-                    <span>{t('patient_visit.edit')}</span>
-                  </button>
-                </div>
-                <div>
-                  <p className="font-bold text-base sm:text-lg text-[var(--color-text)] break-words">
-                    {t(`patient_visit.purpose_${visitData.purposeId}`)}
-                  </p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                    {t(`patient_visit.purpose_${visitData.purposeId}_desc`)}
-                  </p>
-                </div>
-              </Card>
-
-              {/* Review Item 4: Department & Doctor */}
-              <Card className="p-4 border-2 border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/30 min-w-0">
-                <div className="flex items-start justify-between gap-3 min-w-0 mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Stethoscope size={18} className="text-[var(--color-primary-500)] shrink-0" />
-                    <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-primary-800)]">
-                      {t('patient_visit.review_department')}
-                    </span>
-                  </div>
-                  {isDepartmentStepNeeded && (
                     <button
                       type="button"
-                      onClick={() => setCurrentStep(4)}
+                      onClick={() => setCurrentStep(1)}
                       className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
-                      aria-label={`Edit ${t('patient_visit.review_department')}`}
+                      aria-label={`Edit ${t('patient_visit.review_patient')}`}
                     >
                       <Edit2 size={14} />
                       <span>{t('patient_visit.edit')}</span>
                     </button>
-                  )}
-                </div>
-                <div>
-                  <p className="font-extrabold text-base sm:text-lg text-[var(--color-text)] break-words">
-                    {t(selectedDepartmentObj.nameKey)}
-                  </p>
-                  <p className="text-sm font-semibold text-[var(--color-primary-700)] mt-0.5 break-words">
-                    {selectedDepartmentObj.doctorName}
-                  </p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1 break-words">
-                    Building {selectedDepartmentObj.building}, Floor {selectedDepartmentObj.floor} — Room {selectedDepartmentObj.roomNumbers[0]} ({selectedDepartmentObj.wing})
-                  </p>
-                </div>
-              </Card>
+                  </div>
+                }
+                description={
+                  <div>
+                    <p className="font-bold text-base sm:text-lg text-[var(--color-text)]">
+                      {visitData.patientName || 'Guest Patient'}
+                    </p>
+                    <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-0.5">
+                      {visitData.patientAge ? `${visitData.patientAge} years` : 'Age: Not specified'} •{' '}
+                      {visitData.patientGender
+                        ? t(`patient_visit.gender_${visitData.patientGender}`)
+                        : 'Gender: Not specified'}
+                    </p>
+                  </div>
+                }
+              />
+
+              {/* Review Item 2: Accessibility Needs */}
+              <OptionCard
+                as="div"
+                icon={<Accessibility size={22} className="text-[var(--color-primary-500)]" />}
+                iconBgClass="bg-[var(--color-primary-50)]"
+                title={
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">
+                      {t('patient_visit.review_accessibility')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(2)}
+                      className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
+                      aria-label={`Edit ${t('patient_visit.review_accessibility')}`}
+                    >
+                      <Edit2 size={14} />
+                      <span>{t('patient_visit.edit')}</span>
+                    </button>
+                  </div>
+                }
+                badge={
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {visitData.accessibilityNeeds.map((need) => (
+                      <StatusBadge
+                        key={need}
+                        variant={need === 'none' ? 'neutral' : 'info'}
+                        label={t(`patient_visit.a11y_${need}`)}
+                      />
+                    ))}
+                  </div>
+                }
+              />
+
+              {/* Review Item 3: Purpose of Visit */}
+              <OptionCard
+                as="div"
+                icon={<Heart size={22} className="text-[var(--color-primary-500)]" />}
+                iconBgClass="bg-[var(--color-primary-50)]"
+                title={
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-text-muted)]">
+                      {t('patient_visit.review_purpose')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(3)}
+                      className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
+                      aria-label={`Edit ${t('patient_visit.review_purpose')}`}
+                    >
+                      <Edit2 size={14} />
+                      <span>{t('patient_visit.edit')}</span>
+                    </button>
+                  </div>
+                }
+                description={
+                  <div>
+                    <p className="font-bold text-base sm:text-lg text-[var(--color-text)]">
+                      {t(`patient_visit.purpose_${visitData.purposeId}`)}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                      {t(`patient_visit.purpose_${visitData.purposeId}_desc`)}
+                    </p>
+                  </div>
+                }
+              />
+
+              {/* Review Item 4: Department & Doctor */}
+              <OptionCard
+                as="div"
+                highlighted
+                icon={<Stethoscope size={22} className="text-[var(--color-primary-500)]" />}
+                iconBgClass="bg-[var(--color-primary-50)]"
+                title={
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm uppercase tracking-wide text-[var(--color-primary-800)]">
+                      {t('patient_visit.review_department')}
+                    </span>
+                    {isDepartmentStepNeeded && (
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(4)}
+                        className="btn btn-ghost btn-sm text-xs font-bold text-[var(--color-primary-600)] flex items-center gap-1 shrink-0 p-1"
+                        aria-label={`Edit ${t('patient_visit.review_department')}`}
+                      >
+                        <Edit2 size={14} />
+                        <span>{t('patient_visit.edit')}</span>
+                      </button>
+                    )}
+                  </div>
+                }
+                description={
+                  <div>
+                    <p className="font-extrabold text-base sm:text-lg text-[var(--color-text)]">
+                      {t(selectedDepartmentObj.nameKey)}
+                    </p>
+                    <p className="text-sm font-semibold text-[var(--color-primary-700)] mt-0.5">
+                      {selectedDepartmentObj.doctorName}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                      Building {selectedDepartmentObj.building}, Floor {selectedDepartmentObj.floor} — Room {selectedDepartmentObj.roomNumbers[0]} ({selectedDepartmentObj.wing})
+                    </p>
+                  </div>
+                }
+              />
 
               {/* Notice */}
               <div className="text-xs text-[var(--color-text-muted)] p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)]">

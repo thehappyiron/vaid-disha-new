@@ -27,6 +27,7 @@ import { BaseLayout } from '../components/layout';
 import {
   Button,
   StatusBadge,
+  OptionCard,
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getSlipById } from '../services/hospitalService';
@@ -358,14 +359,14 @@ export function SlipPage() {
           <div
             role="alert"
             aria-live="assertive"
-            className="flex items-start gap-3 bg-[var(--color-danger-50)] border-2 border-[var(--color-danger-500)] rounded-2xl p-4 shadow-sm"
+            className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 bg-[var(--color-danger-50)] border-2 border-[var(--color-danger-500)] rounded-2xl p-4 shadow-sm"
           >
             <TriangleAlert
               size={24}
               className="text-[var(--color-danger-500)] shrink-0 mt-0.5"
               aria-hidden="true"
             />
-            <p className="font-bold text-[var(--color-danger-900)] text-base break-words min-w-[12ch] flex-1">
+            <p className="font-bold text-[var(--color-danger-900)] text-base break-words">
               {t('slip.note_emergency')}
             </p>
           </div>
@@ -429,10 +430,10 @@ export function SlipPage() {
               <span className="text-xs uppercase font-bold text-[var(--color-text-muted)]">
                 {t('slip.patient_label')}
               </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-extrabold text-xl sm:text-2xl text-[var(--color-text)]">
-                  {slip.patientName || 'Patient'}
-                </span>
+              <span className="font-extrabold text-xl sm:text-2xl text-[var(--color-text)]">
+                {slip.patientName || 'Patient'}
+              </span>
+              <div className="mt-1">
                 {isGuestUser ? (
                   <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
                     {t('slip.guest_badge')}
@@ -451,64 +452,44 @@ export function SlipPage() {
           {/* 2. Department, Doctor, Room, Floor – Large and clear with icons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
             {/* Department */}
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
-              <div className="w-10 h-10 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center shrink-0">
-                <Building2 size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-[12ch] flex-1">
-                <span className="text-xs font-bold text-[var(--color-text-muted)] block">
-                  {t('slip.department')}
-                </span>
-                <span className="font-extrabold text-lg text-[var(--color-text)] leading-snug block break-words">
-                  {t(slip.department.nameKey)}
-                </span>
-              </div>
-            </div>
+            <OptionCard
+              as="div"
+              icon={<Building2 size={22} aria-hidden="true" />}
+              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+              title={t('slip.department')}
+              description={t(slip.department.nameKey)}
+              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+            />
 
             {/* Doctor */}
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
-              <div className="w-10 h-10 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center shrink-0">
-                <Stethoscope size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-[12ch] flex-1">
-                <span className="text-xs font-bold text-[var(--color-text-muted)] block">
-                  {t('slip.doctor')}
-                </span>
-                <span className="font-extrabold text-lg text-[var(--color-text)] leading-snug block break-words">
-                  {slip.doctorName || slip.department.doctorName || 'Doctor on Duty'}
-                </span>
-              </div>
-            </div>
+            <OptionCard
+              as="div"
+              icon={<Stethoscope size={22} aria-hidden="true" />}
+              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+              title={t('slip.doctor')}
+              description={slip.doctorName || slip.department.doctorName || 'Doctor on Duty'}
+              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+            />
 
             {/* Room */}
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
-              <div className="w-10 h-10 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center shrink-0">
-                <DoorClosed size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-[12ch] flex-1">
-                <span className="text-xs font-bold text-[var(--color-text-muted)] block">
-                  {t('slip.room')}
-                </span>
-                <span className="font-extrabold text-lg text-[var(--color-text)] leading-snug block break-words">
-                  Room {slip.roomNumber || slip.department.roomNumbers[0]}
-                </span>
-              </div>
-            </div>
+            <OptionCard
+              as="div"
+              icon={<DoorClosed size={22} aria-hidden="true" />}
+              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+              title={t('slip.room')}
+              description={`Room ${slip.roomNumber || slip.department.roomNumbers[0]}`}
+              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+            />
 
             {/* Floor & Wing */}
-            <div className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)]">
-              <div className="w-10 h-10 rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center shrink-0">
-                <Layers size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-[12ch] flex-1">
-                <span className="text-xs font-bold text-[var(--color-text-muted)] block">
-                  {t('slip.floor')}
-                </span>
-                <span className="font-extrabold text-lg text-[var(--color-text)] leading-snug block break-words">
-                  {floorLabel(slip.floor, t)} • {slip.wing || slip.department.wing || 'West Wing'} (Bldg {slip.department.building})
-                </span>
-              </div>
-            </div>
+            <OptionCard
+              as="div"
+              icon={<Layers size={22} aria-hidden="true" />}
+              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+              title={t('slip.floor')}
+              description={`${floorLabel(slip.floor, t)} • ${slip.wing || slip.department.wing || 'West Wing'} (Bldg ${slip.department.building})`}
+              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+            />
           </div>
 
           <hr className="divider border-t-2 border-[var(--color-border)] my-1" />
@@ -624,7 +605,7 @@ export function SlipPage() {
             fullWidth
             icon={<Navigation size={22} />}
             onClick={() =>
-              navigate('/wayfinding', {
+              navigate(`/patient/guidance/${slip.id}`, {
                 state: { departmentId: slip.department.id, slip },
               })
             }

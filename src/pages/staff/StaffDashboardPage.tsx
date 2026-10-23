@@ -4,14 +4,11 @@ import {
   Stethoscope,
   LogOut,
   BellRing,
-  Clock,
   UserCheck,
-  Building,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
 import {
-  Card,
   Button,
   PageHeader,
   StatusBadge,
@@ -63,7 +60,7 @@ export function StaffDashboardPage() {
         {/* OPD Queue with vertical mobile layout and no duplicate (Guest) */}
         <div className="flex flex-col gap-3 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-            <div className="min-w-0 flex-1">
+            <div className="flex-1">
               <h2 className="text-lg font-bold text-[var(--color-text)] leading-tight">
                 {t('staff_dashboard.queue_title')}
               </h2>
@@ -81,63 +78,40 @@ export function StaffDashboardPage() {
               const isInConsult = patient.status === 'in_consultation';
 
               return (
-                <Card
+                <OptionCard
                   key={patient.token}
-                  className={[
-                    'p-4 transition-all border-2 min-w-0',
+                  as="div"
+                  selected={isInConsult}
+                  icon={
+                    <span className="font-mono font-black text-xs sm:text-sm tracking-tight">
+                      {patient.token}
+                    </span>
+                  }
+                  iconBgClass={
                     isInConsult
-                      ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/30'
-                      : 'border-[var(--color-border)]',
-                  ].join(' ')}
-                >
-                  {/* Vertical mobile layout: Token + Status on top, Name + Guest tag in middle, Metadata below */}
-                  <div className="flex flex-col gap-2.5 min-w-0">
-                    {/* Top Row: Token + Status Badge */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-md bg-[var(--color-surface-2)] border border-[var(--color-border)] font-mono font-bold text-sm text-[var(--color-text)]">
-                          {patient.token}
-                        </span>
-                        {/* Single Guest/Registered Tag (no duplicate text) */}
-                        {patient.isGuest ? (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                            Guest
-                          </span>
-                        ) : (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300">
-                            Registered
-                          </span>
-                        )}
-                      </div>
-
+                      ? 'bg-[var(--color-primary-500)] text-white shadow-sm'
+                      : 'bg-[var(--color-surface-2)] text-[var(--color-text)] border border-[var(--color-border)]'
+                  }
+                  title={patient.patientName}
+                  description={`${patient.department} • Scheduled: ${patient.time}`}
+                  badge={
+                    <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge
                         variant={isInConsult ? 'info' : 'warning'}
                         label={isInConsult ? 'In Consultation' : 'Waiting'}
-                        className="shrink-0"
                       />
+                      {patient.isGuest ? (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                          Guest
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300">
+                          Registered
+                        </span>
+                      )}
                     </div>
-
-                    {/* Middle: Patient Name (clean, no duplicate '(Guest)' tag) */}
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg text-[var(--color-text)] break-words leading-snug">
-                        {patient.patientName}
-                      </h3>
-                    </div>
-
-                    {/* Bottom Metadata row */}
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-text-muted)] pt-1 border-t border-[var(--color-border)] min-w-0">
-                      <span className="flex items-center gap-1 min-w-0 truncate">
-                        <Building size={13} className="shrink-0" />
-                        {patient.department}
-                      </span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Clock size={13} className="shrink-0" />
-                        {patient.time}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
+                  }
+                />
               );
             })}
           </div>

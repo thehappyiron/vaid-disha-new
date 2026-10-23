@@ -2,25 +2,25 @@ import React, { type ReactNode, type KeyboardEvent } from 'react';
 import { ChevronRight } from 'lucide-react';
 
 export interface OptionCardProps {
-  /** Optional icon element (rendered inside a fixed 48px square container) */
+  /** Optional icon element (rendered inside a fixed icon container, 48px standard, 40px on <360px) */
   icon?: ReactNode;
   /** Custom background/text classes for the icon container */
   iconBgClass?: string;
-  /** Title text or node — gets min-w-[12ch] and wraps whole words */
+  /** Title text or node */
   title: ReactNode;
-  /** Description text or node — spans full card width (col-span-2) at base 18px */
+  /** Description text or node */
   description?: ReactNode;
-  /** Primary badge or tag — spans full card width below text */
+  /** Primary badge or tag — ALWAYS rendered on its own row below the text spanning col-span-2 */
   badge?: ReactNode;
   /** Array of secondary badges or metadata tags */
   badges?: ReactNode[];
-  /** Whether to show a trailing chevron (or pass a custom chevron element) */
+  /** Optional chevron or accessory (24px wide and shrink-0) */
   chevron?: boolean | ReactNode;
   /** Right accessory slot in the title row (e.g. checkbox, radio, speaker button) */
   rightSlot?: ReactNode;
-  /** Footer content spanning full card width (e.g. action link with arrow) */
+  /** Footer content spanning full card width */
   footer?: ReactNode;
-  /** Custom child content rendered below description / badges */
+  /** Custom child content rendered below description / badges (e.g. inputs/forms) */
   children?: ReactNode;
   /** Whether the card is selected/checked */
   selected?: boolean;
@@ -32,8 +32,8 @@ export interface OptionCardProps {
   onClick?: (e: React.MouseEvent<HTMLElement>) => void;
   /** Custom keydown handler */
   onKeyDown?: (e: KeyboardEvent<HTMLElement>) => void;
-  /** HTML tag to render: 'button' (default for clickable), 'div', or 'li' */
-  as?: 'button' | 'div' | 'li';
+  /** HTML tag to render: 'button' (default for clickable), 'a', 'div', or 'li' */
+  as?: 'button' | 'a' | 'div' | 'li';
   /** ARIA role override (e.g. 'button', 'radio', 'checkbox', 'listitem') */
   role?: string;
   /** Accessible label */
@@ -48,18 +48,18 @@ export interface OptionCardProps {
   id?: string;
   /** TabIndex override */
   tabIndex?: number;
+  /** Link URL when as='a' */
+  href?: string;
 }
 
 /**
- * Reusable, accessible OptionCard component that adheres strictly to the layout rules:
- * 1. Mobile layout is VERTICAL by default.
- *    - Row 1: Fixed icon (48px max, shrink-0) + Title (min-w-[12ch], flex-1, wraps whole words) + optional rightSlot/chevron.
- *    - Row 2: Description spans full card width (col-span-2) at base 18px size (never < 16px).
- *    - Row 3: Badges / tags row spans full card width (col-span-2) in a flex-wrap row below text.
- *    - Row 4: Optional footer or custom children spanning full width (col-span-2).
- * 2. Uses CSS Grid: grid-template-columns: auto 1fr.
- * 3. Text columns have min-w-[12ch] so letters never squeeze.
- * 4. Words wrap naturally with overflow-wrap: break-word without breaking ordinary words mid-word.
+ * Shared OptionCard component
+ * Grid structure: grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 items-start
+ * - Col 1: Icon box (48px standard, 40px on <360px screens)
+ * - Col 2: Title and Description in the 1fr column (taking 100% of remaining width)
+ * - Row 2 (col-span-2): Badges ALWAYS on their own wrapping row below the text
+ * - Row 3 (col-span-2): Children / forms at full card width
+ * - Row 4 (col-span-2): Footer
  */
 export function OptionCard({
   icon,
@@ -85,23 +85,23 @@ export function OptionCard({
   className = '',
   id,
   tabIndex,
+  href,
 }: OptionCardProps) {
-  const isClickable = Boolean(onClick) && !disabled;
+  const isClickable = (Boolean(onClick) || Boolean(href)) && !disabled;
 
   const handleKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (onKeyDown) {
       onKeyDown(e);
       return;
     }
-    // For div / li elements that act as buttons, trigger onClick on Enter or Space
     if (isClickable && Component !== 'button' && (e.key === 'Enter' || e.key === ' ')) {
       e.preventDefault();
       onClick?.(e as unknown as React.MouseEvent<HTMLElement>);
     }
   };
 
-  const determinedRole = role ?? (isClickable && Component !== 'button' ? 'button' : undefined);
-  const determinedTabIndex = tabIndex ?? (disabled ? -1 : isClickable && Component !== 'button' ? 0 : undefined);
+  const determinedRole = role ?? (isClickable && Component !== 'button' && Component !== 'a' ? 'button' : undefined);
+  const determinedTabIndex = tabIndex ?? (disabled ? -1 : isClickable && Component !== 'button' && Component !== 'a' ? 0 : undefined);
 
   // Border & background styling based on state
   const stateClasses = selected
@@ -118,9 +118,12 @@ export function OptionCard({
     ? 'opacity-50 cursor-not-allowed pointer-events-none'
     : '';
 
+  const gridColsClass = icon ? 'grid-cols-[auto_minmax(0,1fr)]' : 'grid-cols-1';
+
   return (
     <Component
       id={id}
+      href={Component === 'a' ? href : undefined}
       type={Component === 'button' ? 'button' : undefined}
       role={determinedRole}
       tabIndex={determinedTabIndex}
@@ -132,20 +135,19 @@ export function OptionCard({
       onClick={disabled ? undefined : onClick}
       onKeyDown={disabled ? undefined : handleKeyDown}
       className={[
-        'option-card w-full text-left transition-all box-border',
-        'p-4 sm:p-5 rounded-2xl border-2',
-        'grid grid-cols-[auto_1fr] items-start gap-x-3.5 gap-y-2.5',
+        'w-full text-left rounded-xl border-2 p-4 grid gap-x-4 gap-y-2 items-start transition-all box-border',
+        gridColsClass,
         stateClasses,
         interactiveClasses,
         disabledClasses,
         className,
       ].filter(Boolean).join(' ')}
     >
-      {/* ROW 1 - Col 1: Icon container (Fixed 48px max, shrink-0) */}
+      {/* Col 1: Icon box (48px standard, shrinks to 40px on screens narrower than 360px) */}
       {icon && (
-        <div
+        <span
           className={[
-            'w-12 h-12 rounded-xl flex items-center justify-center shrink-0 p-2.5',
+            'icon-box shrink-0 w-10 min-[360px]:w-12 h-10 min-[360px]:h-12 flex items-center justify-center rounded-lg p-2',
             iconBgClass || (selected
               ? 'bg-[var(--color-primary-500)] text-white'
               : highlighted
@@ -155,49 +157,49 @@ export function OptionCard({
           aria-hidden="true"
         >
           {icon}
-        </div>
+        </span>
       )}
 
-      {/* ROW 1 - Col 2: Title block + optional right accessories */}
-      <div
-        className={[
-          'flex items-center justify-between gap-2.5 min-w-[12ch] flex-1 self-center',
-          !icon ? 'col-span-2' : '',
-        ].join(' ')}
-      >
-        <div className="min-w-[12ch] flex-1">
-          <div className="font-bold text-lg sm:text-xl text-[var(--color-text)] leading-snug break-words">
-            {title}
-          </div>
+      {/* Col 2: Title and Description in the 1fr column (takes all remaining width) */}
+      <div className="min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          {typeof title === 'string' ? (
+            <p className="text-lg font-bold leading-snug">{title}</p>
+          ) : (
+            <div className="text-lg font-bold leading-snug">{title}</div>
+          )}
+
+          {/* Optional chevron (24px wide, shrink-0) or right accessory */}
+          {(chevron || rightSlot) && (
+            <div className="shrink-0 flex items-center gap-1.5 self-center">
+              {rightSlot}
+              {chevron && (
+                typeof chevron === 'boolean' ? (
+                  <span className="shrink-0 w-6 h-6 flex items-center justify-center text-[var(--color-text-muted)]" aria-hidden="true">
+                    <ChevronRight size={24} />
+                  </span>
+                ) : (
+                  <span className="shrink-0 w-6 h-6 flex items-center justify-center text-[var(--color-text-muted)]" aria-hidden="true">
+                    {chevron}
+                  </span>
+                )
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Right accessories: custom slot or chevron */}
-        {(rightSlot || chevron) && (
-          <div className="shrink-0 flex items-center gap-1.5 self-center">
-            {rightSlot}
-            {chevron && (
-              typeof chevron === 'boolean' ? (
-                <ChevronRight size={22} className="text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
-              ) : (
-                chevron
-              )
-            )}
-          </div>
+        {description && (
+          typeof description === 'string' ? (
+            <p className="text-base text-[var(--color-text-muted)] font-medium leading-snug mt-1">{description}</p>
+          ) : (
+            <div className="text-base text-[var(--color-text-muted)] font-medium leading-snug mt-1">{description}</div>
+          )
         )}
       </div>
 
-      {/* ROW 2 - Spans full width: Description at base 18px size */}
-      {description && (
-        <div className="col-span-2 pt-0.5 w-full">
-          <div className="text-base text-[var(--color-text-muted)] font-medium leading-relaxed break-words">
-            {description}
-          </div>
-        </div>
-      )}
-
-      {/* ROW 3 - Spans full width: Badges in a flex-wrap row below the text */}
+      {/* Row 2 (col-span-2): Badges ALWAYS on their own wrapping row below the text */}
       {(badge || (badges && badges.length > 0)) && (
-        <div className="col-span-2 flex flex-wrap items-center gap-2 pt-1 w-full" aria-hidden="true">
+        <div className="col-span-2 flex flex-wrap gap-2 pt-0.5 w-full" aria-hidden="true">
           {badge}
           {badges?.map((b, i) => (
             <span key={i} className="shrink-0">{b}</span>
@@ -205,16 +207,16 @@ export function OptionCard({
         </div>
       )}
 
-      {/* Custom Children spanning full card width */}
+      {/* Row 3 (col-span-2): Children / forms at full card width */}
       {children && (
-        <div className="col-span-2 pt-1 w-full">
+        <div className="col-span-2 w-full pt-1">
           {children}
         </div>
       )}
 
-      {/* Footer row spanning full card width */}
+      {/* Row 4 (col-span-2): Footer */}
       {footer && (
-        <div className="col-span-2 pt-3 mt-1 border-t border-[var(--color-border)] w-full">
+        <div className="col-span-2 w-full pt-2 mt-1 border-t border-[var(--color-border)]">
           {footer}
         </div>
       )}

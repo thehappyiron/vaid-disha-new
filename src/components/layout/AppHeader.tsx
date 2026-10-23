@@ -40,7 +40,7 @@ export function AppHeader({ showHome = false, title }: AppHeaderProps) {
           )}
 
           {/* App name / title */}
-          <span className="font-bold text-[var(--color-primary-500)] text-base sm:text-lg min-w-0 flex-1 truncate mr-1">
+          <span className="font-bold text-[var(--color-primary-500)] text-base sm:text-lg flex-1 truncate mr-1">
             {title ?? t('app.name')}
           </span>
 

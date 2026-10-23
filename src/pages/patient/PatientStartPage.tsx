@@ -15,10 +15,6 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
   Button,
   Input,
   PageHeader,
@@ -89,128 +85,120 @@ export function PatientStartPage() {
         />
 
         {/* Value Proposition Banner (one short sentence explaining benefit of login) */}
-        <Card className="bg-[var(--color-primary-50)] border-2 border-[var(--color-primary-200)] p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-[var(--color-primary-500)] text-white flex-shrink-0 mt-0.5">
-              <ShieldCheck size={20} aria-hidden="true" />
-            </div>
-            <div className="flex-1">
-              <span className="block font-bold text-[var(--color-primary-900)] text-sm uppercase tracking-wide mb-1">
-                Why Sign In?
+        <OptionCard
+          as="div"
+          icon={<ShieldCheck size={24} aria-hidden="true" />}
+          iconBgClass="bg-[var(--color-primary-500)] text-white"
+          title="Why Sign In?"
+          description={t('patient_entry.login_benefit')}
+          badge={
+            <div className="flex flex-wrap gap-2 text-xs font-semibold text-[var(--color-primary-800)]">
+              <span className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-md border border-[var(--color-primary-200)]">
+                <FileText size={14} /> Medical Reports Saved
               </span>
-              <p className="text-[var(--color-primary-950)] text-sm sm:text-base font-semibold leading-relaxed">
-                {t('patient_entry.login_benefit')}
-              </p>
-              <div className="flex flex-wrap gap-3 mt-2 text-xs font-semibold text-[var(--color-primary-800)]">
-                <span className="flex items-center gap-1">
-                  <FileText size={14} /> Medical Reports Saved
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock size={14} /> Revisit Past Prescriptions
-                </span>
-              </div>
+              <span className="flex items-center gap-1 bg-white/80 px-2 py-0.5 rounded-md border border-[var(--color-primary-200)]">
+                <Clock size={14} /> Revisit Past Prescriptions
+              </span>
             </div>
-          </div>
-        </Card>
+          }
+          className="bg-[var(--color-primary-50)] border-2 border-[var(--color-primary-200)]"
+        />
 
         {/* Option 1: Login / Create Account */}
-        <Card highlighted className="p-4 sm:p-5 min-w-0">
-          <CardHeader className="mb-3">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <div className="p-2 rounded-xl bg-[var(--color-primary-50)] text-[var(--color-primary-500)] shrink-0">
-                <LogIn size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <CardTitle>{t('patient_entry.login_tab')}</CardTitle>
-                <span className="text-xs text-[var(--color-text-muted)] font-medium break-words block">
-                  Quick sign-in with Mobile Number & OTP
+        <OptionCard
+          as="div"
+          highlighted
+          icon={<LogIn size={24} aria-hidden="true" />}
+          iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+          title={t('patient_entry.login_tab')}
+          description="Quick sign-in with Mobile Number & OTP"
+          badge={
+            <StatusBadge
+              variant="info"
+              label="Recommended"
+              icon={<Sparkles size={12} />}
+            />
+          }
+        >
+          {!otpSent ? (
+            <form onSubmit={handleSendOtp} className="flex flex-col gap-4 mt-2">
+              <Input
+                id="patient-phone"
+                label={t('patient_entry.phone_label')}
+                placeholder={t('patient_entry.phone_placeholder')}
+                hint="We will send a 4-digit verification code"
+                type="tel"
+                maxLength={10}
+                value={phoneNumber}
+                onChange={(e) => {
+                  setPhoneNumber(e.target.value.replace(/\D/g, ''));
+                  setPhoneError('');
+                }}
+                error={phoneError}
+                required
+              />
+
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={submitting}
+                icon={<Phone size={18} />}
+              >
+                {t('patient_entry.send_otp')}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4 mt-2">
+              <div className="p-3 bg-[var(--color-surface-2)] rounded-lg text-sm text-[var(--color-text)] flex justify-between items-center">
+                <span>
+                  Sent code to: <strong>+91 {phoneNumber}</strong>
                 </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtpCode('');
+                  }}
+                  className="text-xs font-bold text-[var(--color-primary-500)] underline"
+                >
+                  Change
+                </button>
               </div>
-            </div>
-            <StatusBadge variant="info" label="Recommended" icon={<Sparkles size={12} />} className="shrink-0 self-start sm:self-auto" />
-          </CardHeader>
 
-          <CardBody>
-            {!otpSent ? (
-              <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
-                <Input
-                  id="patient-phone"
-                  label={t('patient_entry.phone_label')}
-                  placeholder={t('patient_entry.phone_placeholder')}
-                  hint="We will send a 4-digit verification code"
-                  type="tel"
-                  maxLength={10}
-                  value={phoneNumber}
-                  onChange={(e) => {
-                    setPhoneNumber(e.target.value.replace(/\D/g, ''));
-                    setPhoneError('');
-                  }}
-                  error={phoneError}
-                  required
-                />
+              {/* Dev Mode Hint */}
+              <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-md text-xs text-amber-900 font-medium flex items-center gap-1.5">
+                <span className="font-bold text-amber-700">💡 {t('patient_entry.otp_hint')}</span>
+              </div>
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  loading={submitting}
-                  icon={<Phone size={18} />}
-                >
-                  {t('patient_entry.send_otp')}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
-                <div className="p-3 bg-[var(--color-surface-2)] rounded-lg text-sm text-[var(--color-text)] flex justify-between items-center">
-                  <span>
-                    Sent code to: <strong>+91 {phoneNumber}</strong>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOtpSent(false);
-                      setOtpCode('');
-                    }}
-                    className="text-xs font-bold text-[var(--color-primary-500)] underline"
-                  >
-                    Change
-                  </button>
-                </div>
+              <Input
+                id="patient-otp"
+                label={t('patient_entry.otp_label')}
+                placeholder={t('patient_entry.otp_placeholder')}
+                type="text"
+                maxLength={4}
+                autoFocus
+                value={otpCode}
+                onChange={(e) => {
+                  setOtpCode(e.target.value.replace(/\D/g, ''));
+                  setOtpError('');
+                }}
+                error={otpError}
+                required
+              />
 
-                {/* Dev Mode Hint */}
-                <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-md text-xs text-amber-900 font-medium flex items-center gap-1.5">
-                  <span className="font-bold text-amber-700">💡 {t('patient_entry.otp_hint')}</span>
-                </div>
-
-                <Input
-                  id="patient-otp"
-                  label={t('patient_entry.otp_label')}
-                  placeholder={t('patient_entry.otp_placeholder')}
-                  type="text"
-                  maxLength={4}
-                  autoFocus
-                  value={otpCode}
-                  onChange={(e) => {
-                    setOtpCode(e.target.value.replace(/\D/g, ''));
-                    setOtpError('');
-                  }}
-                  error={otpError}
-                  required
-                />
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  loading={submitting}
-                  icon={<KeyRound size={18} />}
-                >
-                  {t('patient_entry.verify_btn')}
-                </Button>
-              </form>
-            )}
-          </CardBody>
-        </Card>
+              <Button
+                type="submit"
+                variant="primary"
+                fullWidth
+                loading={submitting}
+                icon={<KeyRound size={18} />}
+              >
+                {t('patient_entry.verify_btn')}
+              </Button>
+            </form>
+          )}
+        </OptionCard>
 
         {/* Divider */}
         <div className="relative my-2 text-center min-w-0">

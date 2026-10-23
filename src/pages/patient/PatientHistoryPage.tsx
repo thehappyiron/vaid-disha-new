@@ -65,57 +65,44 @@ export function PatientHistoryPage() {
 
         {/* ── GUEST USER PROMPT ────────────────────────────────────────── */}
         {isGuest && (
-          <Card className="border-2 border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 p-5 shadow-sm">
-            <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-500)] text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Shield size={24} aria-hidden="true" />
+          <OptionCard
+            as="div"
+            icon={<Shield size={24} aria-hidden="true" />}
+            iconBgClass="bg-[var(--color-primary-500)] text-white shadow-sm"
+            title={t('history.guest_title')}
+            description={t('history.guest_desc')}
+            className="border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60"
+            footer={
+              <div className="pt-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<User size={16} />}
+                  onClick={() => navigate('/patient/start')}
+                >
+                  {t('history.guest_login_btn')}
+                </Button>
               </div>
-              <div className="min-w-[12ch] flex-1">
-                <h2 className="text-lg font-bold text-[var(--color-primary-950)] leading-tight">
-                  {t('history.guest_title')}
-                </h2>
-                <p className="text-sm text-[var(--color-primary-900)] font-medium mt-1 leading-relaxed">
-                  {t('history.guest_desc')}
-                </p>
-                <div className="pt-3">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={<User size={16} />}
-                    onClick={() => navigate('/patient/start')}
-                  >
-                    {t('history.guest_login_btn')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
+            }
+          />
         )}
 
         {/* ── REGISTERED USER PROFILE BANNER ──────────────────────────── */}
         {!isGuest && user && (
-          <Card className="p-4 sm:p-5 border-2 border-[var(--color-border)] bg-[var(--color-surface)] shadow-xs">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-500)] text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
-                  <User size={24} aria-hidden="true" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-[var(--color-text)] leading-tight">
-                    {user.name}
-                  </h2>
-                  <p className="text-xs text-[var(--color-text-muted)] font-medium mt-0.5">
-                    Phone: {user.phone || '9876543210'} • ABHA: {user.abhaId || '12-3456-7890-1234'}
-                  </p>
-                </div>
-              </div>
+          <OptionCard
+            as="div"
+            icon={<User size={24} aria-hidden="true" />}
+            iconBgClass="bg-[var(--color-primary-500)] text-white shadow-sm font-bold text-lg"
+            title={user.name}
+            description={`Phone: ${user.phone || '9876543210'} • ABHA: ${user.abhaId || '12-3456-7890-1234'}`}
+            badge={
               <StatusBadge
                 variant="success"
                 icon={<CheckCircle2 size={13} />}
                 label={t('slip.registered_badge')}
               />
-            </div>
-          </Card>
+            }
+          />
         )}
 
         {/* ── TAB SELECTOR (Registered Only) ─────────────────────────── */}
@@ -220,37 +207,39 @@ export function PatientHistoryPage() {
                 ) : (
                   <div className="flex flex-col gap-3">
                     {pastVisits.map((visit) => (
-                      <Card key={visit.id} className="p-4 sm:p-5 border-2 border-[var(--color-border)] shadow-xs">
-                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <OptionCard
+                        key={visit.id}
+                        as="div"
+                        icon={<Ticket size={22} />}
+                        iconBgClass="bg-[var(--color-surface-2)] text-[var(--color-text)] font-mono font-bold text-xs"
+                        title={
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-1 rounded-md bg-[var(--color-surface-2)] border border-[var(--color-border)] font-mono font-bold text-sm text-[var(--color-text)]">
+                            <span className="px-2 py-0.5 rounded bg-[var(--color-surface-2)] border border-[var(--color-border)] font-mono font-bold text-xs">
                               {visit.tokenNumber}
                             </span>
-                            <h4 className="font-bold text-base text-[var(--color-text)]">
-                              {visit.departmentName}
-                            </h4>
+                            <span>{visit.departmentName}</span>
                           </div>
+                        }
+                        description={visit.diagnosisSummary}
+                        badge={
                           <StatusBadge
                             variant={visit.status === 'completed' ? 'neutral' : 'info'}
                             label={visit.status === 'completed' ? 'Completed' : 'In Progress'}
                           />
-                        </div>
-
-                        <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)] font-medium mt-2 pt-2 border-t border-[var(--color-border)]">
-                          <span className="flex items-center gap-1">
-                            <Calendar size={13} />
-                            {visit.date}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Stethoscope size={13} />
-                            {visit.doctorName}
-                          </span>
-                        </div>
-
-                        <p className="text-sm text-[var(--color-text-muted)] mt-2 leading-relaxed">
-                          {visit.diagnosisSummary}
-                        </p>
-                      </Card>
+                        }
+                        footer={
+                          <div className="flex items-center gap-4 text-xs text-[var(--color-text-muted)] font-medium pt-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar size={13} />
+                              {visit.date}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Stethoscope size={13} />
+                              {visit.doctorName}
+                            </span>
+                          </div>
+                        }
+                      />
                     ))}
                   </div>
                 )}
@@ -284,32 +273,26 @@ export function PatientHistoryPage() {
             ) : (
               <div className="flex flex-col gap-3">
                 {reports.map((report) => (
-                  <Card key={report.id} className="p-4 sm:p-5 border-2 border-[var(--color-border)] shadow-xs">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[var(--color-primary-500)] flex items-center justify-center shrink-0 mt-0.5">
-                          <FileText size={20} />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-base text-[var(--color-text)]">
-                            {report.title}
-                          </h4>
-                          <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-                            {report.department} • {report.date} • {report.fileSize}
-                          </p>
-                        </div>
+                  <OptionCard
+                    key={report.id}
+                    as="div"
+                    icon={<FileText size={20} />}
+                    iconBgClass="bg-blue-50 text-[var(--color-primary-500)]"
+                    title={report.title}
+                    description={`${report.department} • ${report.date} • ${report.fileSize}`}
+                    footer={
+                      <div className="pt-1">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          icon={<Download size={15} />}
+                          onClick={() => alert(`Simulated downloading ${report.title} (${report.fileSize})`)}
+                        >
+                          {t('history.download_report')}
+                        </Button>
                       </div>
-
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        icon={<Download size={15} />}
-                        onClick={() => alert(`Simulated downloading ${report.title} (${report.fileSize})`)}
-                      >
-                        {t('history.download_report')}
-                      </Button>
-                    </div>
-                  </Card>
+                    }
+                  />
                 ))}
               </div>
             )}

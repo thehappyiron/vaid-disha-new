@@ -39,7 +39,7 @@ function ToggleRow({
   return (
     <label
       htmlFor={id}
-      className="flex items-start gap-3.5 cursor-pointer py-3 px-2 rounded-xl hover:bg-[var(--color-surface-2)] transition-colors min-w-0"
+      className="flex items-start gap-3.5 cursor-pointer py-3 px-2 rounded-xl hover:bg-[var(--color-surface-2)] transition-colors"
     >
       <span
         className="w-10 h-10 rounded-xl bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex items-center justify-center flex-shrink-0"
@@ -47,7 +47,7 @@ function ToggleRow({
       >
         {icon}
       </span>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1">
         <span className="block font-bold text-[var(--color-text)] leading-tight break-words">
           {label}
         </span>
@@ -210,13 +210,13 @@ export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
                 aria-checked={settings.colorMode === 'standard'}
                 onClick={() => setColorMode('standard')}
                 className={[
-                  'text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between min-w-0',
+                  'text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between',
                   settings.colorMode === 'standard'
                     ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40 text-[var(--color-text)] shadow-sm'
                     : 'border-[var(--color-border)] hover:border-[var(--color-primary-300)] text-[var(--color-text)]',
                 ].join(' ')}
               >
-                <div className="flex items-start justify-between gap-2 min-w-0 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-1">
                   <span className="font-bold text-sm sm:text-base break-words">
                     {t('a11y.color_mode_standard')}
                   </span>
@@ -237,13 +237,13 @@ export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
                 aria-checked={settings.colorMode === 'colorblind-assist'}
                 onClick={() => setColorMode('colorblind-assist')}
                 className={[
-                  'text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between min-w-0',
+                  'text-left p-3.5 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between',
                   settings.colorMode === 'colorblind-assist'
                     ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/40 text-[var(--color-text)] shadow-sm'
                     : 'border-[var(--color-border)] hover:border-[var(--color-primary-300)] text-[var(--color-text)]',
                 ].join(' ')}
               >
-                <div className="flex items-start justify-between gap-2 min-w-0 mb-1">
+                <div className="flex items-start justify-between gap-2 mb-1">
                   <span className="font-bold text-sm sm:text-base break-words flex items-center gap-1.5">
                     {t('a11y.color_mode_assist')}
                     <Sparkles size={14} className="text-[var(--color-accent-500)] shrink-0" />

@@ -54,8 +54,8 @@ export function EmergencyCard({
       </div>
 
       {/* ROW 1 - Col 2: Title and trailing arrow indicator */}
-      <div className="flex items-center justify-between gap-2.5 min-w-[12ch] flex-1 self-center">
-        <div className="min-w-[12ch] flex-1">
+      <div className="flex items-center justify-between gap-2.5 flex-1 self-center">
+        <div>
           <span className="font-extrabold text-[var(--color-danger-900)] text-base sm:text-lg leading-snug break-words">
             {t('purpose.emergency_card_title')}
           </span>

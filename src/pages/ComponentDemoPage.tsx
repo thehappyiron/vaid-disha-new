@@ -15,10 +15,6 @@ import {
 import {
   Button,
   Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  CardFooter,
   Input,
   Select,
   StatusBadge,
@@ -299,93 +295,68 @@ export function ComponentDemoPage() {
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Standard Card with Structured Header/Body/Footer */}
-            <Card>
-              <CardHeader>
-                <div>
-                  <CardTitle>{t('demo.card_title')}</CardTitle>
-                  <span className="text-sm text-[var(--color-text-muted)]">
-                    Token #OPD-1042
-                  </span>
+            {/* Standard Card using OptionCard structure */}
+            <OptionCard
+              as="div"
+              icon={<Building size={24} />}
+              title={t('demo.card_title')}
+              description="Token #OPD-1042"
+              badge={<StatusBadge variant="success" label="Active" />}
+              footer={
+                <div className="flex gap-2">
+                  <Button variant="primary" size="sm" icon={<ArrowRight size={16} />} iconPosition="right">
+                    View Directions
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    Cancel
+                  </Button>
                 </div>
-                <StatusBadge variant="success" label="Active" />
-              </CardHeader>
-              <CardBody>
-                <div className="flex flex-col gap-1.5 text-sm">
-                  <div className="flex items-center gap-2">
-                    <User size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
-                    <span><strong>Doctor:</strong> Dr. Sharma (Cardiologist)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Building size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
-                    <span><strong>Location:</strong> Building A, 2nd Floor, Room 204</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
-                    <span><strong>Time:</strong> Today at 10:30 AM (Est. Wait: 15 min)</span>
-                  </div>
+              }
+            >
+              <div className="flex flex-col gap-1.5 text-sm pt-2">
+                <div className="flex items-center gap-2">
+                  <User size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
+                  <span><strong>Doctor:</strong> Dr. Sharma (Cardiologist)</span>
                 </div>
-              </CardBody>
-              <CardFooter>
-                <Button variant="primary" size="sm" icon={<ArrowRight size={16} />} iconPosition="right">
-                  View Directions
-                </Button>
-                <Button variant="ghost" size="sm">
-                  Cancel
-                </Button>
-              </CardFooter>
-            </Card>
+                <div className="flex items-center gap-2">
+                  <Building size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
+                  <span><strong>Location:</strong> Building A, 2nd Floor, Room 204</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
+                  <span><strong>Time:</strong> Today at 10:30 AM (Est. Wait: 15 min)</span>
+                </div>
+              </div>
+            </OptionCard>
 
             {/* Interactive Card */}
-            <Card
-              interactive
+            <OptionCard
               onClick={() => setCardClickCount((c) => c + 1)}
-              tabIndex={0}
-              role="button"
-              aria-label="Interactive demonstration card"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  setCardClickCount((c) => c + 1);
-                }
-              }}
-            >
-              <CardHeader>
-                <CardTitle>{t('demo.card_interactive_title')}</CardTitle>
-                <StatusBadge variant="info" label={`Clicks: ${cardClickCount}`} />
-              </CardHeader>
-              <CardBody>
-                <p className="text-base">
-                  {t('demo.card_interactive_body')}
-                </p>
-                <p className="text-sm text-[var(--color-text-muted)] mt-2">
-                  This card includes hover state styling, visible high-contrast focus rings, and keyboard accessibility via Enter/Space.
-                </p>
-              </CardBody>
-              <CardFooter>
+              icon={<Heart size={24} />}
+              title={t('demo.card_interactive_title')}
+              description={t('demo.card_interactive_body')}
+              badge={<StatusBadge variant="info" label={`Clicks: ${cardClickCount}`} />}
+              footer={
                 <span className="text-sm font-semibold text-[var(--color-primary-500)]">
                   Click to increment counter →
                 </span>
-              </CardFooter>
-            </Card>
+              }
+            >
+              <p className="text-sm text-[var(--color-text-muted)] pt-2">
+                This card includes hover state styling, visible high-contrast focus rings, and keyboard accessibility via Enter/Space.
+              </p>
+            </OptionCard>
 
             {/* Highlighted Card */}
-            <Card highlighted className="md:col-span-2">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <AlertCircle size={22} className="text-[var(--color-danger-500)]" aria-hidden="true" />
-                  <CardTitle className="text-[var(--color-danger-700)]">
-                    Emergency Protocols & Assistance
-                  </CardTitle>
-                </div>
-                <StatusBadge variant="danger" label="Priority Care" />
-              </CardHeader>
-              <CardBody>
-                <p className="text-base text-[var(--color-text)]">
-                  If this is a medical emergency or trauma, do not wait in line. Proceed directly to Building E (Casualty & Emergency) or notify any hospital staff member immediately.
-                </p>
-              </CardBody>
-            </Card>
+            <OptionCard
+              as="div"
+              highlighted
+              className="md:col-span-2 border-[var(--color-danger-500)] bg-[var(--color-danger-50)]/40"
+              icon={<AlertCircle size={24} className="text-[var(--color-danger-500)]" aria-hidden="true" />}
+              title="Emergency Protocols & Assistance"
+              description="If this is a medical emergency or trauma, do not wait in line. Proceed directly to Building E (Casualty & Emergency) or notify any hospital staff member immediately."
+              badge={<StatusBadge variant="danger" label="Priority Care" />}
+            />
 
             {/* OptionCard Demo */}
             <div className="md:col-span-2">

@@ -5,14 +5,11 @@ import { Stethoscope, UserCheck, Info } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
   Button,
   Input,
   PageHeader,
   StatusBadge,
+  OptionCard,
 } from '../../components/ui';
 
 export function StaffLoginPage() {
@@ -63,61 +60,51 @@ export function StaffLoginPage() {
         </div>
 
         {/* Staff Login Card */}
-        <Card className="p-5">
-          <CardHeader className="mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[var(--color-primary-50)] text-[var(--color-primary-500)] flex-shrink-0">
-                <Stethoscope size={24} aria-hidden="true" />
-              </div>
-              <div>
-                <CardTitle>Staff Credentials</CardTitle>
-                <span className="text-xs text-[var(--color-text-muted)] font-medium">
-                  Authorised hospital personnel only
-                </span>
-              </div>
-            </div>
-            <StatusBadge variant="info" label="Staff Portal" />
-          </CardHeader>
+        <OptionCard
+          as="div"
+          icon={<Stethoscope size={24} aria-hidden="true" />}
+          iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+          title="Staff Credentials"
+          description="Authorised hospital personnel only"
+          badge={<StatusBadge variant="info" label="Staff Portal" />}
+        >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+            <Input
+              id="staff-id"
+              label={t('staff_login.staff_id_label')}
+              placeholder={t('staff_login.staff_id_placeholder')}
+              value={staffId}
+              onChange={(e) => {
+                setStaffId(e.target.value);
+                setError('');
+              }}
+              error={error}
+              required
+            />
 
-          <CardBody>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input
-                id="staff-id"
-                label={t('staff_login.staff_id_label')}
-                placeholder={t('staff_login.staff_id_placeholder')}
-                value={staffId}
-                onChange={(e) => {
-                  setStaffId(e.target.value);
-                  setError('');
-                }}
-                error={error}
-                required
-              />
+            <Input
+              id="staff-password"
+              type="password"
+              label={t('staff_login.password_label')}
+              placeholder={t('staff_login.password_placeholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
 
-              <Input
-                id="staff-password"
-                type="password"
-                label={t('staff_login.password_label')}
-                placeholder={t('staff_login.password_placeholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                size="lg"
-                loading={loading}
-                icon={<UserCheck size={20} />}
-                className="mt-2"
-              >
-                {t('staff_login.login_btn')}
-              </Button>
-            </form>
-          </CardBody>
-        </Card>
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              size="lg"
+              loading={loading}
+              icon={<UserCheck size={20} />}
+              className="mt-2"
+            >
+              {t('staff_login.login_btn')}
+            </Button>
+          </form>
+        </OptionCard>
 
         {/* Security Notice */}
         <div className="text-center pt-3 text-xs text-[var(--color-text-muted)]">
