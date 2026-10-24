@@ -17,6 +17,13 @@ import {
   Users,
   FileText,
   Mail,
+  ExternalLink,
+  Megaphone,
+  Target,
+  Bell,
+  Play,
+  Siren,
+  Loader2,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
 import { Button, StatusBadge, Input } from '../../components/ui';
@@ -258,37 +265,42 @@ export function DevStorePage() {
               <Link
                 to="/patient/slip"
                 target="_blank"
-                className="btn btn-sm btn-secondary text-xs font-bold bg-white"
+                className="btn btn-sm btn-secondary text-xs font-bold bg-white inline-flex items-center gap-1.5"
               >
-                /patient/slip ↗
+                <span>/patient/slip</span>
+                <ExternalLink size={12} aria-hidden="true" />
               </Link>
               <Link
                 to="/patient/live"
                 target="_blank"
-                className="btn btn-sm btn-primary text-xs font-bold"
+                className="btn btn-sm btn-primary text-xs font-bold inline-flex items-center gap-1.5"
               >
-                /patient/live ↗
+                <span>/patient/live</span>
+                <ExternalLink size={12} aria-hidden="true" />
               </Link>
               <Link
                 to="/patient/notifications"
                 target="_blank"
-                className="btn btn-sm btn-secondary text-xs font-bold bg-white"
+                className="btn btn-sm btn-secondary text-xs font-bold bg-white inline-flex items-center gap-1.5"
               >
-                /patient/notifications ↗
+                <span>/patient/notifications</span>
+                <ExternalLink size={12} aria-hidden="true" />
               </Link>
               <Link
                 to="/patient/completion"
                 target="_blank"
-                className="btn btn-sm btn-secondary text-xs font-bold bg-white"
+                className="btn btn-sm btn-secondary text-xs font-bold bg-white inline-flex items-center gap-1.5"
               >
-                /patient/completion ↗
+                <span>/patient/completion</span>
+                <ExternalLink size={12} aria-hidden="true" />
               </Link>
               <Link
                 to="/patient/emergency"
                 target="_blank"
-                className="btn btn-sm btn-secondary text-xs font-bold text-red-600 bg-white"
+                className="btn btn-sm btn-secondary text-xs font-bold text-red-600 bg-white inline-flex items-center gap-1.5"
               >
-                /patient/emergency ↗
+                <span>/patient/emergency</span>
+                <ExternalLink size={12} aria-hidden="true" />
               </Link>
             </div>
           </div>
@@ -554,10 +566,10 @@ export function DevStorePage() {
             <Button
               variant="primary"
               size="sm"
-              icon={<BellRing size={16} />}
+              icon={<Megaphone size={16} />}
               onClick={handleCallNext}
             >
-              📢 Call Next Patient
+              Call Next Patient
             </Button>
           </div>
 
@@ -566,29 +578,32 @@ export function DevStorePage() {
             <Button
               variant="secondary"
               size="sm"
+              icon={<Target size={15} />}
               onClick={() => handleSetPatientStatus('CARD-1042', 'in_progress')}
               className="bg-emerald-50 border-emerald-300 text-emerald-950 font-bold"
             >
-              🎯 Set CARD-1042 to "Attending Now"
+              Set CARD-1042 to "Attending Now"
             </Button>
 
             {/* Quick 1-click trigger to make CARD-1042 Turn Soon */}
             <Button
               variant="secondary"
               size="sm"
+              icon={<Bell size={15} />}
               onClick={() => handleSetPatientStatus('CARD-1042', 'turn_soon')}
               className="bg-blue-50 border-blue-300 text-blue-950 font-bold"
             >
-              🔔 Set CARD-1042 to "Turn Soon"
+              Set CARD-1042 to "Turn Soon"
             </Button>
 
             {/* Quick 1-click trigger to make CARD-1042 Waiting */}
             <Button
               variant="secondary"
               size="sm"
+              icon={<Clock size={15} />}
               onClick={() => handleSetPatientStatus('CARD-1042', 'waiting')}
             >
-              ⏳ Set CARD-1042 to "Waiting"
+              Set CARD-1042 to "Waiting"
             </Button>
           </div>
 
@@ -610,9 +625,10 @@ export function DevStorePage() {
                     type="button"
                     title="Advance to In Consultation"
                     onClick={() => handleSetPatientStatus(entry.token, 'in_progress')}
-                    className="text-emerald-600 hover:text-emerald-800 font-bold ml-1"
+                    className="text-emerald-600 hover:text-emerald-800 font-bold ml-1 inline-flex items-center gap-1"
                   >
-                    ▶ Call
+                    <Play size={11} aria-hidden="true" />
+                    <span>Call</span>
                   </button>
                 </div>
               ))}
@@ -652,27 +668,30 @@ export function DevStorePage() {
             <Button
               variant="secondary"
               size="sm"
+              icon={<Siren size={15} />}
               className="bg-red-50 border-red-300 text-red-950 font-bold"
               onClick={() => handleBroadcastAlert('emergency')}
             >
-              🚨 Broadcast Emergency Code
+              Broadcast Emergency Code
             </Button>
 
             <Button
               variant="secondary"
               size="sm"
+              icon={<AlertTriangle size={15} />}
               className="bg-amber-50 border-amber-300 text-amber-950 font-bold"
               onClick={() => handleBroadcastAlert('delay')}
             >
-              ⚠️ Broadcast Delay Alert
+              Broadcast Delay Alert
             </Button>
 
             <Button
               variant="secondary"
               size="sm"
+              icon={<Megaphone size={15} />}
               onClick={() => handleBroadcastAlert('announcement')}
             >
-              📢 Broadcast Announcement
+              Broadcast Announcement
             </Button>
           </div>
 
@@ -717,12 +736,13 @@ export function DevStorePage() {
             <Button
               variant="secondary"
               size="sm"
+              icon={<Bell size={15} />}
               onClick={async () => {
                 const res = await requestPermission();
                 showToast(`Browser permission status: ${res}`);
               }}
             >
-              🔔 Request Browser Push Permission
+              Request Browser Push Permission
             </Button>
           </div>
 
@@ -854,7 +874,7 @@ export function DevStorePage() {
           {emailStatus && (
             <div className="p-3 bg-teal-50 border border-teal-300 text-teal-950 rounded-xl text-xs font-bold animate-fadeIn flex items-center justify-between">
               <span>{emailStatus}</span>
-              {sendingEvent && <span className="animate-spin text-sm">⏳</span>}
+              {sendingEvent && <Loader2 size={16} className="animate-spin text-teal-800 shrink-0" aria-hidden="true" />}
             </div>
           )}
 

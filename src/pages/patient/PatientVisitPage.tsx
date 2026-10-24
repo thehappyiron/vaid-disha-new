@@ -26,6 +26,7 @@ import {
   Edit2,
   ShieldCheck,
   Check,
+  Lightbulb,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
@@ -1017,8 +1018,9 @@ export function PatientVisitPage() {
               />
 
               {/* Notice */}
-              <div className="text-xs text-[var(--color-text-muted)] p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)]">
-                💡 {t('patient_visit.review_route_hint')}
+              <div className="text-xs text-[var(--color-text-muted)] p-3 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)] flex items-center gap-2">
+                <Lightbulb size={16} className="text-amber-500 shrink-0" aria-hidden="true" />
+                <span>{t('patient_visit.review_route_hint')}</span>
               </div>
             </div>
           </section>

@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes, ReactNode } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 /* ── Field wrapper ────────────────────────────────────────── */
 
@@ -35,10 +36,10 @@ export function Field({ id, label, hint, error, required, children }: FieldProps
           id={`${id}-error`}
           role="alert"
           aria-live="polite"
-          className="field-error flex items-center gap-1 mt-1"
+          className="field-error flex items-center gap-1.5 mt-1"
         >
-          {/* Icon + text — never color alone */}
-          <span aria-hidden="true">⚠</span>
+          {/* Lucide icon + text — never color alone */}
+          <AlertCircle size={14} className="shrink-0" aria-hidden="true" />
           {error}
         </span>
       )}

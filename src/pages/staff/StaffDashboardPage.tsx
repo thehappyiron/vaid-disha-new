@@ -18,6 +18,7 @@ import {
   HelpCircle,
   Coffee,
   X,
+  Accessibility,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
 import {
@@ -736,9 +737,10 @@ export function StaffDashboardPage() {
                               {patient.accessibilityNeeds.map((need, idx) => (
                                 <span
                                   key={idx}
-                                  className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300"
+                                  className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300"
                                 >
-                                  ♿ {need.replace('_', ' ')}
+                                  <Accessibility size={12} className="shrink-0" aria-hidden="true" />
+                                  <span>{need.replace('_', ' ')}</span>
                                 </span>
                               ))}
                             </div>
@@ -1013,9 +1015,10 @@ export function StaffDashboardPage() {
                         {patient.accessibilityNeeds.map((need, idx) => (
                           <span
                             key={idx}
-                            className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
                           >
-                            ♿ {need.replace('_', ' ')}
+                            <Accessibility size={12} className="shrink-0" aria-hidden="true" />
+                            <span>{need.replace('_', ' ')}</span>
                           </span>
                         ))}
                       </>

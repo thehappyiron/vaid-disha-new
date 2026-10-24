@@ -11,6 +11,8 @@ import {
   Sparkles,
   FileText,
   Clock,
+  AlertTriangle,
+  Lightbulb,
 } from 'lucide-react';
 import {
   isValidEmail,
@@ -241,7 +243,7 @@ export function PatientStartPage() {
 
               {isExistingUser ? (
                 <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-xs sm:text-sm text-amber-950 font-semibold flex items-center gap-2.5 shadow-xs">
-                  <span className="text-lg shrink-0">⚠️</span>
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" aria-hidden="true" />
                   <span>
                     {t(
                       'patient_entry.user_exists_otp_notice',
@@ -251,8 +253,9 @@ export function PatientStartPage() {
                 </div>
               ) : (
                 <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-900 font-medium flex items-center gap-1.5">
+                  <Lightbulb className="w-4 h-4 text-blue-600 shrink-0" aria-hidden="true" />
                   <span className="font-bold text-blue-700">
-                    💡 {t('patient_entry.otp_hint', 'Enter the 6-digit verification code sent to your email')}
+                    {t('patient_entry.otp_hint', 'Enter the 6-digit verification code sent to your email')}
                   </span>
                 </div>
               )}

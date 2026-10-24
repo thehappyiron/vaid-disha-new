@@ -5,18 +5,18 @@ import {
   CornerRightUp,
   MapPin,
   Footprints,
+  ChevronsUpDown,
 } from 'lucide-react';
 import type { NavigationStep } from '../types';
 import { useTranslation } from 'react-i18next';
 
-// Lucide doesn't export ElevatorIcon directly - use a fallback
 const DIRECTION_ICONS: Record<NavigationStep['directionIcon'], React.ReactNode> = {
   'arrow-up': <ArrowUp size={24} aria-hidden="true" />,
   'arrow-right': <ArrowRight size={24} aria-hidden="true" />,
   'arrow-left': <ArrowLeft size={24} aria-hidden="true" />,
   'corner-right-up': <CornerRightUp size={24} aria-hidden="true" />,
   'map-pin': <MapPin size={24} aria-hidden="true" />,
-  'elevator': <ArrowUp size={24} aria-hidden="true" />,
+  'elevator': <ChevronsUpDown size={24} aria-hidden="true" />,
   'stairs': <Footprints size={24} aria-hidden="true" />,
 };
 
@@ -60,8 +60,9 @@ export function NavStepCard({ step }: NavStepCardProps) {
               {t(step.instructionKey, step.instructionParams ?? {})}
             </p>
             {step.landmark && (
-              <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                📍 {step.landmark}
+              <p className="text-sm text-[var(--color-text-muted)] mt-1 flex items-center gap-1.5">
+                <MapPin size={14} className="shrink-0 text-[var(--color-primary-500)]" aria-hidden="true" />
+                <span>{step.landmark}</span>
               </p>
             )}
           </div>

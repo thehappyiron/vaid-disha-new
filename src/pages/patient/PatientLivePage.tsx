@@ -19,6 +19,7 @@ import {
   Sparkles,
   Users,
   CheckCircle,
+  FlaskConical,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
 import { Button, StatusBadge } from '../../components/ui';
@@ -534,9 +535,10 @@ export function PatientLivePage() {
         <div className="text-center pt-4 pb-2">
           <Link
             to="/dev/store"
-            className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary-600)] underline font-medium"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-primary-600)] underline font-medium"
           >
-            🧪 Developer Multi-Tab Testbench (/dev/store)
+            <FlaskConical size={14} aria-hidden="true" />
+            <span>Developer Multi-Tab Testbench (/dev/store)</span>
           </Link>
         </div>
       </div>

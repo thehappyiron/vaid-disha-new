@@ -20,6 +20,7 @@ import {
   X,
   Compass,
   Footprints,
+  Languages,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
 import {
@@ -892,18 +893,32 @@ export function PatientGuidancePage() {
                 </div>
 
                 {/* Bilingual staff helper phrases */}
-                <div className="flex flex-col gap-2 pt-1">
-                  <p className="text-base font-bold text-slate-900 leading-snug">
-                    🇮🇳 {t('guidance.staff_modal_bilingual_hi', {
-                      room: destinationNode?.roomNumber ? `कमरा ${destinationNode.roomNumber}` : 'विभाग',
-                      dept: destinationNode?.name || 'विभाग',
-                    })}
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 pt-1">
+                  <Languages size={14} className="text-slate-400" aria-hidden="true" />
+                  <span>Regional Translations:</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <p className="text-base font-bold text-slate-900 leading-snug flex items-center gap-2">
+                    <span className="text-[11px] font-black uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                      HI
+                    </span>
+                    <span>
+                      {t('guidance.staff_modal_bilingual_hi', {
+                        room: destinationNode?.roomNumber ? `कमरा ${destinationNode.roomNumber}` : 'विभाग',
+                        dept: destinationNode?.name || 'विभाग',
+                      })}
+                    </span>
                   </p>
-                  <p className="text-base font-bold text-slate-900 leading-snug">
-                    🚩 {t('guidance.staff_modal_bilingual_mr', {
-                      room: destinationNode?.roomNumber ? `खोली क्र. ${destinationNode.roomNumber}` : 'विभाग',
-                      dept: destinationNode?.name || 'विभाग',
-                    })}
+                  <p className="text-base font-bold text-slate-900 leading-snug flex items-center gap-2">
+                    <span className="text-[11px] font-black uppercase px-2 py-0.5 rounded bg-orange-100 text-orange-900 border border-orange-300">
+                      MR
+                    </span>
+                    <span>
+                      {t('guidance.staff_modal_bilingual_mr', {
+                        room: destinationNode?.roomNumber ? `खोली क्र. ${destinationNode.roomNumber}` : 'विभाग',
+                        dept: destinationNode?.name || 'विभाग',
+                      })}
+                    </span>
                   </p>
                 </div>
               </div>

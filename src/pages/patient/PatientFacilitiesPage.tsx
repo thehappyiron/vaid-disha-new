@@ -149,8 +149,9 @@ export function PatientFacilitiesPage() {
               <Sparkles size={18} />
               <span>{t('facilities.take_nearest_washroom', 'Take me to nearest washroom')}</span>
               {hasWheelchair && (
-                <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded-full font-bold ml-1">
-                  ♿ Accessible
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold ml-1 inline-flex items-center gap-1">
+                  <Accessibility size={13} aria-hidden="true" />
+                  <span>Accessible</span>
                 </span>
               )}
             </Button>
@@ -259,7 +260,15 @@ export function PatientFacilitiesPage() {
                     color: selectedFacility.strokeColor,
                   }}
                 >
-                  {selectedFacility.shape === 'cross' ? '+' : selectedFacility.shape === 'diamond' ? '💧' : selectedFacility.isAccessible ? '♿' : '📍'}
+                  {selectedFacility.shape === 'cross' ? (
+                    <PlusSquare size={22} aria-hidden="true" />
+                  ) : selectedFacility.shape === 'diamond' ? (
+                    <Droplets size={22} aria-hidden="true" />
+                  ) : selectedFacility.isAccessible ? (
+                    <Accessibility size={22} aria-hidden="true" />
+                  ) : (
+                    <MapPin size={22} aria-hidden="true" />
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -270,9 +279,10 @@ export function PatientFacilitiesPage() {
                       {selectedFacility.shapeLabel}
                     </span>
                     {selectedFacility.isAccessible && (
-                      <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-green-100 text-green-900 border border-green-300 flex items-center gap-1">
-                        <ShieldCheck size={13} />
-                        Accessible ♿
+                      <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-green-100 text-green-900 border border-green-300 flex items-center gap-1.5">
+                        <ShieldCheck size={13} aria-hidden="true" />
+                        <span>Accessible</span>
+                        <Accessibility size={13} aria-hidden="true" />
                       </span>
                     )}
                   </div>
@@ -357,7 +367,15 @@ export function PatientFacilitiesPage() {
                           color: fac.strokeColor,
                         }}
                       >
-                        {fac.shape === 'cross' ? '+' : fac.shape === 'diamond' ? '💧' : fac.isAccessible ? '♿' : '📍'}
+                        {fac.shape === 'cross' ? (
+                          <PlusSquare size={18} aria-hidden="true" />
+                        ) : fac.shape === 'diamond' ? (
+                          <Droplets size={18} aria-hidden="true" />
+                        ) : fac.isAccessible ? (
+                          <Accessibility size={18} aria-hidden="true" />
+                        ) : (
+                          <MapPin size={18} aria-hidden="true" />
+                        )}
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-[var(--color-text)] leading-snug">
