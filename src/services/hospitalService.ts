@@ -13,6 +13,7 @@ import {
   KNOWN_LOCATIONS,
   SYMPTOM_DEPARTMENT_RULES,
 } from '../data/hospitalData';
+import { ensurePatientInQueue } from './liveStore';
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -417,6 +418,16 @@ export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
 
     localStorage.setItem(SLIPS_STORAGE_KEY, JSON.stringify(list));
     localStorage.setItem(LATEST_SLIP_KEY, JSON.stringify(enrichedSlip));
+
+    // Register into reactive live queue store
+    if (enrichedSlip.token && enrichedSlip.department?.id) {
+      ensurePatientInQueue({
+        token: enrichedSlip.token,
+        patientName: enrichedSlip.patientName || 'Patient',
+        departmentId: enrichedSlip.department.id,
+        roomNumber: enrichedSlip.roomNumber || enrichedSlip.department.roomNumbers?.[0],
+      }).catch((e) => console.warn('Failed to register slip in liveStore', e));
+    }
 
     // If registered user, also append to visits in authUser
     if (authUser && !authUser.isGuest) {

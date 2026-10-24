@@ -22,6 +22,8 @@ import {
   BellRing,
   UserCheck,
   Sparkles,
+  Coffee,
+  Radio,
 } from 'lucide-react';
 import { BaseLayout } from '../components/layout';
 import {
@@ -31,6 +33,7 @@ import {
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getSlipById } from '../services/hospitalService';
+import { usePatientLiveStatus } from '../services/liveStore';
 import type { Slip } from '../types';
 
 function formatTime(iso: string): string {
@@ -73,6 +76,7 @@ export function SlipPage() {
   const [slip, setSlip] = useState<Slip | null>(
     (location.state as { slip?: Slip })?.slip || null
   );
+  const liveStatus = usePatientLiveStatus(slip?.token, slip?.department?.id);
   const [loading, setLoading] = useState(!slip);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
@@ -259,17 +263,21 @@ export function SlipPage() {
 
     ctx.font = 'bold 20px sans-serif';
     ctx.fillStyle = '#E69F00';
+    const effectiveStatus = liveStatus.status || slip.status;
+    const effectiveWait = liveStatus.estimatedWaitMinutes ?? slip.estimatedWait;
+    const effectivePeopleAhead = liveStatus.peopleAhead ?? slip.peopleAhead ?? 1;
+
     const statusText =
-      slip.status === 'in_progress'
+      effectiveStatus === 'in_progress'
         ? 'In Consultation'
-        : slip.status === 'turn_soon'
+        : effectiveStatus === 'turn_soon'
           ? 'Your Turn Soon'
           : 'Waiting in Queue';
     ctx.fillText(`Queue Status: ${statusText}`, 50, 575);
 
     ctx.fillStyle = '#212529';
-    ctx.fillText(`Estimated Wait: ~${slip.estimatedWait} minutes`, 50, 615);
-    ctx.fillText(`People ahead of you: ${slip.peopleAhead ?? 1}`, 50, 655);
+    ctx.fillText(`Estimated Wait: ~${effectiveWait} minutes`, 50, 615);
+    ctx.fillText(`People ahead of you: ${effectivePeopleAhead}`, 50, 655);
 
     // Direction box
     ctx.beginPath();
@@ -327,29 +335,94 @@ export function SlipPage() {
   const isEmergency = slip.department.category === 'emergency';
   const isGuestUser = slip.isGuest ?? (user ? user.isGuest : true);
 
-  // Status badge config
-  const statusConfig = {
-    waiting: {
+  const effectiveStatus = liveStatus.status || slip.status || 'waiting';
+  const effectiveWait = liveStatus.estimatedWaitMinutes ?? slip.estimatedWait ?? 15;
+  const effectivePeopleAhead = liveStatus.peopleAhead ?? slip.peopleAhead ?? 1;
+  const nowServingToken = liveStatus.nowServingToken;
+  const deptLive = liveStatus.department;
+  const activeAlerts = liveStatus.activeAlerts;
+
+  // Live status badge & card styling (icon + text + colour)
+  const getLiveConfig = () => {
+    if (deptLive?.statusCode === 'emergency' || isEmergency) {
+      return {
+        variant: 'danger' as const,
+        icon: <TriangleAlert size={18} className="text-red-600 shrink-0" aria-hidden="true" />,
+        badgeLabel: 'Emergency Priority',
+        headline: deptLive?.statusMessage || 'Emergency Priority — Immediate Care',
+        subtext: 'Proceed directly to the triage desk.',
+        cardClass: 'bg-red-50 border-2 border-red-400 text-red-950',
+        clockColor: 'text-red-700',
+        waitText: 'Immediate (No Wait)',
+      };
+    }
+
+    if (effectiveStatus === 'in_progress') {
+      return {
+        variant: 'success' as const,
+        icon: <UserCheck size={18} className="text-emerald-700 shrink-0 animate-pulse" aria-hidden="true" />,
+        badgeLabel: t('slip.status_in_progress'),
+        headline: `Attending Now in Room ${slip.roomNumber || deptLive?.roomNumber || '101'}`,
+        subtext: 'Please enter the room now. The specialist is attending to you.',
+        cardClass: 'bg-emerald-50 border-2 border-emerald-400 text-emerald-950',
+        clockColor: 'text-emerald-700',
+        waitText: t('slip.no_wait'),
+      };
+    }
+
+    if (effectiveStatus === 'turn_soon') {
+      return {
+        variant: 'info' as const,
+        icon: <BellRing size={18} className="text-blue-700 shrink-0 animate-bounce" aria-hidden="true" />,
+        badgeLabel: t('slip.status_turn_soon'),
+        headline: 'Your Turn Soon! (Next in line)',
+        subtext: `Please stay directly outside Room ${slip.roomNumber || deptLive?.roomNumber || '101'}.`,
+        cardClass: 'bg-blue-50 border-2 border-blue-400 text-blue-950',
+        clockColor: 'text-blue-700',
+        waitText: effectiveWait === 0 ? t('slip.no_wait') : t('slip.minutes_wait', { minutes: effectiveWait }),
+      };
+    }
+
+    if (deptLive?.statusCode === 'break') {
+      return {
+        variant: 'warning' as const,
+        icon: <Coffee size={18} className="text-amber-700 shrink-0" aria-hidden="true" />,
+        badgeLabel: 'Doctor on Break',
+        headline: deptLive.statusMessage || `Doctor on break until ${deptLive.breakUntil || 'shortly'}`,
+        subtext: 'Consultations will resume shortly. Please relax in the waiting lounge.',
+        cardClass: 'bg-amber-50 border-2 border-amber-400 text-amber-950',
+        clockColor: 'text-amber-700',
+        waitText: t('slip.minutes_wait', { minutes: effectiveWait }),
+      };
+    }
+
+    if (deptLive?.statusCode === 'delayed') {
+      return {
+        variant: 'warning' as const,
+        icon: <AlertTriangle size={18} className="text-orange-700 shrink-0" aria-hidden="true" />,
+        badgeLabel: 'Department Delayed',
+        headline: deptLive.statusMessage || `Lab delayed by ${deptLive.delayMinutes || 20} min`,
+        subtext: 'Estimated wait times have been adjusted automatically based on batch workload.',
+        cardClass: 'bg-orange-50 border-2 border-orange-400 text-orange-950',
+        clockColor: 'text-orange-700',
+        waitText: t('slip.minutes_wait', { minutes: effectiveWait }),
+      };
+    }
+
+    // Default waiting
+    return {
       variant: 'warning' as const,
-      icon: <Clock size={16} aria-hidden="true" />,
-      label: t('slip.status_waiting'),
-    },
-    turn_soon: {
-      variant: 'info' as const,
-      icon: <BellRing size={16} aria-hidden="true" />,
-      label: t('slip.status_turn_soon'),
-    },
-    in_progress: {
-      variant: 'success' as const,
-      icon: <UserCheck size={16} aria-hidden="true" />,
-      label: t('slip.status_in_progress'),
-    },
-    completed: {
-      variant: 'neutral' as const,
-      icon: <CheckCircle size={16} aria-hidden="true" />,
-      label: t('slip.status_completed'),
-    },
-  }[slip.status || 'waiting'];
+      icon: <Clock size={18} className="text-amber-700 shrink-0" aria-hidden="true" />,
+      badgeLabel: deptLive?.statusMessage || t('slip.status_waiting'),
+      headline: deptLive?.statusMessage || 'Doctor with another patient',
+      subtext: nowServingToken ? `Currently attending token #${nowServingToken}` : 'Queue is advancing normally.',
+      cardClass: 'bg-[var(--color-warning-50)] border-2 border-[var(--color-warning-300)] text-[var(--color-warning-950)]',
+      clockColor: 'text-[var(--color-warning-700)]',
+      waitText: effectiveWait === 0 ? t('slip.no_wait') : t('slip.minutes_wait', { minutes: effectiveWait }),
+    };
+  };
+
+  const statusConfig = getLiveConfig();
 
   return (
     <BaseLayout showHome={true} headerTitle={t('app.name')}>
@@ -499,44 +572,103 @@ export function SlipPage() {
 
               <hr className="divider border-t-2 border-[var(--color-border)] my-1" />
 
-              {/* 3. Live Status Badge & 4. Estimated Wait Time and People Ahead */}
+              {/* 3. Live Status Card (Icon + Text + Colour with adjusting wait time & multi-tab sync) */}
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                    {t('slip.live_status')}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                      {t('slip.live_status')}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Sync
+                    </span>
+                  </div>
                   <StatusBadge
                     variant={statusConfig.variant}
                     icon={statusConfig.icon}
-                    label={statusConfig.label}
+                    label={statusConfig.badgeLabel}
                   />
                 </div>
 
-                <div className="p-3.5 rounded-xl bg-[var(--color-warning-50)] border-2 border-[var(--color-warning-300)] flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2.5">
-                    <Clock size={20} className="text-[var(--color-warning-700)] shrink-0" />
-                    <div>
-                      <span className="text-xs text-[var(--color-warning-900)] font-bold block">
-                        {t('slip.estimated_wait')}
-                      </span>
-                      <span className="text-base sm:text-lg font-black text-[var(--color-warning-950)]">
-                        {slip.estimatedWait === 0
-                          ? t('slip.no_wait')
-                          : t('slip.minutes_wait', { minutes: slip.estimatedWait })}
-                      </span>
+                {/* Main Live Card with Icon, Text, Color, and Dynamic Wait */}
+                <div className={`p-4 rounded-2xl flex flex-col gap-3 transition-colors ${statusConfig.cardClass}`}>
+                  {/* Status Headline & Description */}
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-white/85 shrink-0 shadow-xs mt-0.5">
+                      {statusConfig.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-base sm:text-lg font-black leading-snug">
+                        {statusConfig.headline}
+                      </h3>
+                      <p className="text-xs sm:text-sm font-semibold opacity-90 mt-0.5">
+                        {statusConfig.subtext}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-xs text-[var(--color-warning-900)] font-bold block">
-                      Queue Position
-                    </span>
-                    <span className="text-base font-extrabold text-[var(--color-warning-950)]">
-                      {slip.peopleAhead !== undefined && slip.peopleAhead > 0
-                        ? t('slip.people_ahead', { count: slip.peopleAhead })
-                        : t('slip.people_ahead_zero')}
-                    </span>
+                  {/* Dynamic Metrics Row: Wait Time & Queue Position */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-current/15">
+                    {/* Wait Time */}
+                    <div className="p-2.5 rounded-xl bg-white/75 flex items-center gap-2.5">
+                      <Clock size={20} className={`${statusConfig.clockColor} shrink-0`} />
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider block opacity-80">
+                          {t('slip.estimated_wait')}
+                        </span>
+                        <span className="text-base sm:text-lg font-black">
+                          {statusConfig.waitText}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Queue Position & Now Serving */}
+                    <div className="p-2.5 rounded-xl bg-white/75 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider block opacity-80">
+                          Queue Position
+                        </span>
+                        <span className="text-base font-extrabold">
+                          {effectivePeopleAhead > 0
+                            ? t('slip.people_ahead', { count: effectivePeopleAhead })
+                            : t('slip.people_ahead_zero')}
+                        </span>
+                      </div>
+                      {nowServingToken && (
+                        <div className="text-right">
+                          <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70">
+                            Now Serving
+                          </span>
+                          <span className="font-mono font-black text-sm px-2 py-0.5 rounded bg-black/10">
+                            {nowServingToken}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Active Hospital Announcement / Delay Alert if any */}
+                  {activeAlerts.length > 0 && (
+                    <div className="p-2.5 rounded-xl bg-white/90 border border-current/20 text-xs font-semibold flex items-center gap-2">
+                      <AlertTriangle size={15} className="shrink-0 text-amber-600" />
+                      <span className="truncate">{activeAlerts[0].title}: {activeAlerts[0].message}</span>
+                    </div>
+                  )}
+
+                  {/* Live Room Status link */}
+                  <Link
+                    to={`/patient/live?token=${slip.token}&dept=${slip.department.id}&slipId=${slip.id}`}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-white/90 hover:bg-white text-xs sm:text-sm font-bold text-[var(--color-primary-800)] border border-[var(--color-primary-300)] transition-all shadow-xs group"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Radio size={16} className="text-[var(--color-primary-600)] animate-pulse" />
+                      What's happening at destination right now?
+                    </span>
+                    <span className="text-[var(--color-primary-600)] group-hover:translate-x-1 transition-transform font-extrabold shrink-0">
+                      View Live Tracker →
+                    </span>
+                  </Link>
                 </div>
               </div>
 

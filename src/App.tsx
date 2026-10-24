@@ -10,6 +10,7 @@ import {
   PatientVisitPage,
   PatientHistoryPage,
   PatientGuidancePage,
+  PatientLivePage,
 } from './pages/patient';
 import { StaffLoginPage, StaffDashboardPage } from './pages/staff';
 import { AdminComingSoonPage } from './pages/admin';
@@ -18,6 +19,7 @@ import { DepartmentPage } from './pages/DepartmentPage';
 import { SlipPage } from './pages/SlipPage';
 import { WayfindingPage } from './pages/WayfindingPage';
 import { ComponentDemoPage } from './pages/ComponentDemoPage';
+import { DevStorePage } from './pages/dev/DevStorePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export function App() {
@@ -45,6 +47,12 @@ export function App() {
             <Route path="/patient/slip" element={<SlipPage />} />
             <Route path="/slip" element={<SlipPage />} />
             <Route path="/slip/:id" element={<SlipPage />} />
+
+            {/* Real-time Destination Live Tracker */}
+            <Route path="/patient/live" element={<PatientLivePage />} />
+
+            {/* Temporary Developer Store Testbench */}
+            <Route path="/dev/store" element={<DevStorePage />} />
 
             {/* Screen D: Staff login & Staff dashboard */}
             <Route path="/staff/login" element={<StaffLoginPage />} />
