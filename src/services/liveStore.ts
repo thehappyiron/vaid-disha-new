@@ -786,6 +786,64 @@ export async function ensurePatientInQueue(params: {
   return nextState.queue.find((q) => q.token === params.token) || newEntry;
 }
 
+/** Add multiple random walk-in guest patients to the live queue */
+export async function addRandomGuestPatients(count: number = 3): Promise<QueueEntry[]> {
+  const depts = ['opd-general', 'opd-cardio', 'opd-ortho', 'lab-path'];
+  const firstNames = ['Aarav', 'Meera', 'Kiran', 'Deepak', 'Anita', 'Sunil', 'Pooja', 'Rohan'];
+  const lastNames = ['Sharma', 'Joshi', 'Patel', 'Kulkarni', 'Deshmukh', 'Verma', 'Nair'];
+  const purposes = [
+    'Viral Fever & Chills',
+    'Routine Blood Test & Glucose',
+    'Follow-up Consultation',
+    'Chest Discomfort Screening',
+    'Knee Joint Pain Review',
+  ];
+
+  let nextState: LiveStoreState = { ...memoryState };
+  const added: QueueEntry[] = [];
+
+  for (let i = 0; i < count; i++) {
+    const randNum = Math.floor(100 + Math.random() * 900);
+    const deptId = depts[Math.floor(Math.random() * depts.length)];
+    const dept = nextState.departments[deptId];
+    const prefix = deptId.includes('cardio') ? 'CARD' : deptId.includes('ortho') ? 'ORTHO' : deptId.includes('lab') ? 'LAB' : 'OPD';
+    const token = `${prefix}-${randNum}`;
+    const name = `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]} (Guest)`;
+    const purpose = purposes[Math.floor(Math.random() * purposes.length)];
+
+    const currentWaiting = nextState.queue.filter(
+      (q) => q.departmentId === deptId && (q.status === 'waiting' || q.status === 'turn_soon')
+    ).length;
+
+    const waitPerPatient = dept ? dept.estimatedWaitPerPatientMinutes : 10;
+    const newPos = currentWaiting + 1;
+
+    const entry: QueueEntry = {
+      id: `q-guest-${Date.now()}-${i}-${randNum}`,
+      token,
+      patientName: name,
+      departmentId: deptId,
+      roomNumber: dept?.roomNumber || 'Room 101',
+      status: 'waiting',
+      position: newPos,
+      estimatedWaitMinutes: newPos * waitPerPatient,
+      isGuest: true,
+      purpose,
+      createdAt: new Date().toISOString(),
+    };
+
+    nextState = {
+      ...nextState,
+      queue: [...nextState.queue, entry],
+    };
+    nextState = recomputeDepartmentQueue(nextState, deptId);
+    added.push(entry);
+  }
+
+  commitState(nextState);
+  return added;
+}
+
 /** Update department live status message, code, doctor, or token */
 export async function updateDepartmentStatus(
   departmentId: string,

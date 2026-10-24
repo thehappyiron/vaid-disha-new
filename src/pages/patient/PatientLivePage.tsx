@@ -204,7 +204,13 @@ export function PatientLivePage() {
         {/* ══════════════════════════════════════════════════════════════════
             HERO CARD: WHAT'S HAPPENING AT THE DESTINATION RIGHT NOW
             ══════════════════════════════════════════════════════════════════ */}
-        <div className={`p-5 sm:p-6 rounded-3xl shadow-sm flex flex-col gap-4 ${visual.cardBg}`}>
+        <div
+          role="region"
+          aria-live="polite"
+          aria-atomic="true"
+          aria-label="Destination live queue feed"
+          className={`p-5 sm:p-6 rounded-3xl shadow-sm flex flex-col gap-4 ${visual.cardBg}`}
+        >
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-white/90 shadow-2xs">

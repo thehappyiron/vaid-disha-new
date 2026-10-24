@@ -594,7 +594,13 @@ export function SlipPage() {
                 </div>
 
                 {/* Main Live Card with Icon, Text, Color, and Dynamic Wait */}
-                <div className={`p-4 rounded-2xl flex flex-col gap-3 transition-colors ${statusConfig.cardClass}`}>
+                <div
+                  role="region"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label="Destination live queue status"
+                  className={`p-4 rounded-2xl flex flex-col gap-3 transition-colors ${statusConfig.cardClass}`}
+                >
                   {/* Status Headline & Description */}
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-xl bg-white/85 shrink-0 shadow-xs mt-0.5">

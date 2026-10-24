@@ -308,24 +308,45 @@ export function PatientFacilitiesPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredFacilities.map((fac) => {
-              const isSelected = selectedFacility?.id === fac.id;
+          {filteredFacilities.length === 0 ? (
+            <div className="p-8 sm:p-12 text-center rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)]">
+                <Compass size={24} />
+              </div>
+              <h3 className="font-bold text-base text-[var(--color-text)]">
+                {t('facilities.no_matching', 'No facilities found for this filter')}
+              </h3>
+              <p className="text-xs text-[var(--color-text-muted)] max-w-sm">
+                {t('facilities.no_matching_desc', 'Try selecting "All facilities" to view all hospital locations and amenities.')}
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setActiveCategory('all')}
+                className="mt-2 font-bold"
+              >
+                <span>Show All Facilities</span>
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              {filteredFacilities.map((fac) => {
+                const isSelected = selectedFacility?.id === fac.id;
 
-              return (
-                <div
-                  key={fac.id}
-                  onClick={() => {
-                    setSelectedFacility(fac);
-                    setSelectedFloor(fac.floor);
-                  }}
-                  className={[
-                    'p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 text-left bg-[var(--color-surface)]',
-                    isSelected
-                      ? 'border-[var(--color-primary-500)] shadow-md ring-2 ring-[var(--color-primary-200)]'
-                      : 'border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:shadow-xs',
-                  ].join(' ')}
-                >
+                return (
+                  <div
+                    key={fac.id}
+                    onClick={() => {
+                      setSelectedFacility(fac);
+                      setSelectedFloor(fac.floor);
+                    }}
+                    className={[
+                      'p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 text-left bg-[var(--color-surface)]',
+                      isSelected
+                        ? 'border-[var(--color-primary-500)] shadow-md ring-2 ring-[var(--color-primary-200)]'
+                        : 'border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:shadow-xs',
+                    ].join(' ')}
+                  >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <div
@@ -369,8 +390,9 @@ export function PatientFacilitiesPage() {
               );
             })}
           </div>
-        </div>
+        )}
       </div>
-    </BaseLayout>
+    </div>
+  </BaseLayout>
   );
 }

@@ -387,44 +387,69 @@ export function PatientReportsPage() {
             />
 
             <div className="flex flex-col gap-3">
-              {visibleReports.map((report) => (
-                <div
-                  key={report.id}
-                  onClick={() => setSelectedReport(report)}
-                  className="p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-border)] hover:border-[var(--color-primary-400)] transition-all bg-[var(--color-surface)] cursor-pointer flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs hover:shadow-sm"
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      setSelectedReport(report);
-                    }
-                  }}
-                  aria-label={`View report for ${report.testName}`}
-                >
-                  <div className="flex items-start gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-[var(--color-primary-50)] dark:bg-slate-800 text-[var(--color-primary-600)] flex items-center justify-center shrink-0 border border-[var(--color-border)] mt-0.5">
-                      <FileText size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-base sm:text-lg font-black text-[var(--color-text)]">
-                        {report.testName}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium mt-0.5">
-                        {report.date} • {report.department}
-                      </p>
-                      <p className="text-xs text-[var(--color-text-muted)] font-medium mt-0.5">
-                        Ref: {report.doctorName}
-                      </p>
-                    </div>
+              {visibleReports.length === 0 ? (
+                <div className="p-8 sm:p-12 text-center rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-[var(--color-surface-2)] flex items-center justify-center text-[var(--color-text-muted)]">
+                    <FileText size={24} />
                   </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-[var(--color-border)]">
-                    {getStatusBadge(report.status)}
-                    <ChevronRight size={20} className="text-[var(--color-text-muted)]" />
-                  </div>
+                  <h3 className="font-bold text-base text-[var(--color-text)]">
+                    {t('reports.empty_title', 'No lab reports found')}
+                  </h3>
+                  <p className="text-xs text-[var(--color-text-muted)] max-w-sm">
+                    {t(
+                      'reports.empty_desc',
+                      'Diagnostic lab results ordered during your consultations will appear here once processed.'
+                    )}
+                  </p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => navigate('/patient/facilities')}
+                    className="mt-2 font-bold"
+                  >
+                    <span>Find Pathology Lab</span>
+                  </Button>
                 </div>
-              ))}
+              ) : (
+                visibleReports.map((report) => (
+                  <div
+                    key={report.id}
+                    onClick={() => setSelectedReport(report)}
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-border)] hover:border-[var(--color-primary-400)] transition-all bg-[var(--color-surface)] cursor-pointer flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs hover:shadow-sm"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedReport(report);
+                      }
+                    }}
+                    aria-label={`View report for ${report.testName}`}
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-[var(--color-primary-50)] dark:bg-slate-800 text-[var(--color-primary-600)] flex items-center justify-center shrink-0 border border-[var(--color-border)] mt-0.5">
+                        <FileText size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-base sm:text-lg font-black text-[var(--color-text)]">
+                          {report.testName}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium mt-0.5">
+                          {report.date} • {report.department}
+                        </p>
+                        <p className="text-xs text-[var(--color-text-muted)] font-medium mt-0.5">
+                          Ref: {report.doctorName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-[var(--color-border)]">
+                      {getStatusBadge(report.status)}
+                      <ChevronRight size={20} className="text-[var(--color-text-muted)]" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

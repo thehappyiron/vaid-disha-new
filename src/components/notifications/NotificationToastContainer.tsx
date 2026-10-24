@@ -56,19 +56,20 @@ export function NotificationToastContainer() {
         const isReport = toast.type === 'report_ready';
 
         const borderClass = isEmergency
-          ? 'border-2 border-red-500 bg-red-50 text-red-950'
+          ? 'border-[3px] border-[#D55E00] bg-[#FDECE4] text-[#3D1500]'
           : isTurnSoon
-            ? 'border-2 border-blue-400 bg-blue-50 text-blue-950'
+            ? 'border-2 border-blue-400 bg-blue-50 text-blue-950 dark:bg-blue-950 dark:text-blue-100'
             : isCompleted
-              ? 'border-2 border-emerald-400 bg-emerald-50 text-emerald-950'
+              ? 'border-2 border-emerald-400 bg-emerald-50 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100'
               : isReport
-                ? 'border-2 border-indigo-400 bg-indigo-50 text-indigo-950'
+                ? 'border-2 border-indigo-400 bg-indigo-50 text-indigo-950 dark:bg-indigo-950 dark:text-indigo-100'
                 : 'border-2 border-[var(--color-primary-400)] bg-[var(--color-surface)] text-[var(--color-text)]';
 
         return (
           <div
             key={toast.toastId}
             role="alert"
+            aria-live="polite"
             className={[
               'p-3.5 sm:p-4 rounded-2xl shadow-xl flex items-start gap-3 pointer-events-auto transition-all animate-slideDown',
               borderClass,

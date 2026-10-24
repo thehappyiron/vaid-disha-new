@@ -78,7 +78,11 @@ export function StaffPatientsPage() {
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none"
                 aria-hidden="true"
               />
+              <label htmlFor="staff-patient-search" className="sr-only">
+                Search patient records
+              </label>
               <input
+                id="staff-patient-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}

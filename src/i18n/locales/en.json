@@ -481,7 +481,9 @@
     "filter_pharmacy": "Pharmacy",
     "interactive_map": "Floor Map & Facility Pins",
     "take_me_here": "Guide me here",
-    "all_facilities_list": "Facility Directory"
+    "all_facilities_list": "Facility Directory",
+    "no_matching": "No facilities found for this filter",
+    "no_matching_desc": "Try selecting \"All facilities\" to view all hospital locations and amenities."
   },
   "reports": {
     "title": "My Lab Reports",
@@ -489,7 +491,9 @@
     "guest_banner_title": "You are currently browsing as a Guest",
     "guest_banner_desc": "Only reports tied to your current visit slip are displayed. Log in with your mobile number to permanently save and access your lifetime medical history.",
     "login_to_save": "Log in to Save",
-    "back_to_list": "Back to reports list"
+    "back_to_list": "Back to reports list",
+    "empty_title": "No lab reports found",
+    "empty_desc": "Diagnostic lab results ordered during your consultations will appear here once processed."
   },
   "chatbot": {
     "title": "Vaid Disha Help",
@@ -500,6 +504,12 @@
     "quick_room": "Where is my room?",
     "quick_washroom": "Nearest washroom",
     "quick_reports": "My reports"
+  },
+  "staff": {
+    "desktop_tip": "For the best experience, use a tablet or computer.",
+    "nav_queue": "Queue & Duty Desk",
+    "nav_emergencies": "Emergencies",
+    "nav_patients": "Patient Records"
   }
 }
 

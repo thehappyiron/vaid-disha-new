@@ -211,6 +211,14 @@ export function PatientNotificationsPage() {
               <p className="text-xs text-[var(--color-text-muted)] max-w-xs">
                 You will receive alerts here when your turn approaches, doctor calls your token, or lab reports are published.
               </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate('/patient/slip')}
+                className="mt-2 font-bold"
+              >
+                <span>Return to My Slip</span>
+              </Button>
             </div>
           ) : (
             filteredNotifications.map((notif) => {

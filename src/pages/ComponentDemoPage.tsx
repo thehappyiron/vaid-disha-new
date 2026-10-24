@@ -1,429 +1,360 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
-  ArrowRight,
-  CheckCircle,
+  RotateCcw,
+  Bell,
+  CheckCircle2,
+  FileCheck,
+  Coffee,
   AlertTriangle,
-  AlertCircle,
-  Info,
-  Calendar,
-  Building,
-  User,
-  Heart,
-  Sparkles,
+  UserPlus,
+  ExternalLink,
+  Laptop,
+  Check,
+  Zap,
 } from 'lucide-react';
-import {
-  Button,
-  Card,
-  Input,
-  Select,
-  StatusBadge,
-  PageHeader,
-  BottomActionBar,
-  EmergencyCard,
-  OptionCard,
-} from '../components/ui';
 import { BaseLayout } from '../components/layout';
-import { useAccessibility } from '../context/AccessibilityContext';
+import { PageHeader } from '../components/ui';
+import {
+  useLiveStore,
+  resetLiveStore,
+  addNotification,
+  completePatientConsultation,
+  setDepartmentCustomStatus,
+  createEmergencyAlert,
+  addRandomGuestPatients,
+  updateQueueEntryStatus,
+} from '../services/liveStore';
 
 export function ComponentDemoPage() {
-  const { t } = useTranslation();
-  const { settings } = useAccessibility();
+  const { state } = useLiveStore();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // State for interactive demo controls
-  const [loadingBtn, setLoadingBtn] = useState(false);
-  const [patientName, setPatientName] = useState('');
-  const [selectedDept, setSelectedDept] = useState('');
-  const [cardClickCount, setCardClickCount] = useState(0);
-
-  const toggleLoading = () => {
-    setLoadingBtn(true);
-    setTimeout(() => setLoadingBtn(false), 2000);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((current) => (current === msg ? null : current));
+    }, 4000);
   };
 
-  const departmentOptions = [
-    { value: 'opd-general', label: 'General OPD (Dr. Verma)' },
-    { value: 'cardiology', label: 'Cardiology (Dr. Sharma)' },
-    { value: 'orthopaedics', label: 'Orthopaedics (Dr. Patel)' },
-    { value: 'radiology', label: 'Radiology & X-Ray (Ground Floor)' },
-    { value: 'emergency', label: 'Emergency & Casualty (24x7)' },
-  ];
+  // 1. Reset all mock data
+  const handleResetData = async () => {
+    await resetLiveStore();
+    showToast('Reset all mock data: Queue, departments, alerts, and notifications restored to initial state.');
+  };
+
+  // 2. Simulate "Your turn is coming soon"
+  const handleSimulateTurnSoon = async () => {
+    const targetToken = 'CARD-1042';
+    await updateQueueEntryStatus(targetToken, 'turn_soon');
+    await addNotification({
+      type: 'turn_soon',
+      title: 'Your turn is coming',
+      message: `Token ${targetToken}: You are next in line for Cardiology OPD (Room 204). Please proceed near the door.`,
+      actionUrl: `/patient/live?token=${targetToken}&dept=opd-cardio`,
+      actionLabel: 'View Live Room Status',
+      token: targetToken,
+      departmentId: 'opd-cardio',
+    });
+    showToast(`Simulated: "Your turn is coming soon" triggered for ${targetToken}. Live countdown updated.`);
+  };
+
+  // 3. Simulate "Consultation complete"
+  const handleSimulateConsultComplete = async () => {
+    const targetToken = 'CARD-1042';
+    await completePatientConsultation(targetToken);
+    showToast(`Simulated: Consultation marked complete for ${targetToken}. Next steps notification broadcast.`);
+  };
+
+  // 4. Simulate "Lab report ready"
+  const handleSimulateReportReady = async () => {
+    await addNotification({
+      type: 'report_ready',
+      title: 'Your lab report is ready',
+      message: 'Central Pathology Laboratory: Complete Blood Count (CBC) and Lipid Profile reports have been processed.',
+      actionUrl: '/patient/reports',
+      actionLabel: 'View Diagnostic Reports',
+    });
+    showToast('Simulated: "Your lab report is ready" alert sent to patient notification tray.');
+  };
+
+  // 5. Simulate "Doctor on break (back at 11:30)"
+  const handleSimulateDoctorBreak = async () => {
+    await setDepartmentCustomStatus(
+      'opd-cardio',
+      'Doctor on break (back at 11:30 AM)',
+      'break',
+      { breakUntil: '11:30 AM' }
+    );
+    showToast('Simulated: Cardiology OPD status updated to "Doctor on break (back at 11:30 AM)". Patient status card updated.');
+  };
+
+  // 6. Simulate "New emergency alert from patient"
+  const handleSimulateEmergency = async () => {
+    await createEmergencyAlert({
+      patientToken: 'EMG-88',
+      patientName: 'Meera Rao',
+      landmark: '2nd Floor Near Lift B',
+      symptoms: ['Chest pain or heavy tightness', 'Difficulty breathing'],
+      note: 'Sudden dizziness and severe tightness while walking near Lift B',
+    });
+    showToast('Simulated: Critical Emergency Alert dispatched at 2nd Floor Near Lift B. Staff siren triggered.');
+  };
+
+  // 7. Add 3 random walk-in guest patients
+  const handleAddRandomGuests = async () => {
+    const added = await addRandomGuestPatients(3);
+    const tokens = added.map((p) => p.token).join(', ');
+    showToast(`Added 3 walk-in guest patients to queue: ${tokens}. Recalculated queue positions.`);
+  };
 
   return (
-    <BaseLayout showHome={false} headerTitle={t('app.name')}>
-      <div className="page-container">
-        {/* Page Header Component */}
+    <BaseLayout showHome={true} headerTitle="Live Sync Demo Panel">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Page Header */}
         <PageHeader
-          title={t('demo.page_title')}
-          subtitle={t('demo.page_subtitle')}
-          showBack={false}
-          actions={
-            <StatusBadge
-              variant="info"
-              label={`v1.0 • ${settings.textSize.toUpperCase()}`}
-              icon={<Sparkles size={14} aria-hidden="true" />}
-            />
-          }
+          title="Interactive Live Sync Demo Panel"
+          subtitle="Simulate real-time hospital events, trigger patient notifications, and test cross-tab synchronization"
+          showBack={true}
+          onBack={() => window.history.back()}
         />
 
-        {/* Accessibility Status Banner */}
-        <Card noPadding className="bg-[var(--color-primary-50)] border-[var(--color-primary-200)] p-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-[var(--color-primary-800)] text-sm tracking-wide uppercase">
-                {t('demo.section_a11y')} Status
-              </span>
-            </div>
-            <p className="text-sm text-[var(--color-primary-900)]">
-              Use the <strong>Accessibility</strong> icon button in the top right header to adjust text size, toggle high contrast mode, activate colorblind patterns, or reduce animations.
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <StatusBadge
-                variant="info"
-                label={`Text: ${settings.textSize}`}
-              />
-              <StatusBadge
-                variant={settings.theme === 'light' ? 'neutral' : 'info'}
-                label={`Theme: ${settings.theme}`}
-              />
-              <StatusBadge
-                variant={settings.colorMode === 'standard' ? 'neutral' : 'warning'}
-                label={`Mode: ${settings.colorMode}`}
-              />
-              <StatusBadge
-                variant={settings.reduceMotion ? 'warning' : 'neutral'}
-                label={settings.reduceMotion ? 'Reduced Motion: ON' : 'Reduced Motion: OFF'}
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Reusable EmergencyCard Demo */}
-        <section aria-labelledby="section-emergency-card">
-          <h2 id="section-emergency-card" className="section-label">
-            Emergency Option Card (Reusable Component)
-          </h2>
-          <EmergencyCard to="/patient/emergency" />
-        </section>
-
-        {/* Section 1: Buttons */}
-        <section aria-labelledby="section-buttons">
-          <h2 id="section-buttons" className="section-label">
-            {t('demo.section_buttons')}
-          </h2>
-
-          <div className="flex flex-col gap-4">
-            {/* Primary & Secondary */}
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="primary"
-                icon={<ArrowRight size={20} />}
-                iconPosition="right"
-                onClick={() => alert('Primary button activated')}
-              >
-                {t('demo.btn_primary')}
-              </Button>
-
-              <Button
-                variant="secondary"
-                icon={<Building size={20} />}
-                onClick={() => alert('Secondary button activated')}
-              >
-                {t('demo.btn_secondary')}
-              </Button>
-
-              <Button
-                variant="danger"
-                icon={<AlertCircle size={20} />}
-                onClick={() => alert('Danger button clicked')}
-              >
-                {t('demo.btn_danger')}
-              </Button>
-
-              <Button
-                variant="ghost"
-                onClick={() => alert('Ghost button clicked')}
-              >
-                {t('demo.btn_ghost')}
-              </Button>
-            </div>
-
-            {/* Sizes & States */}
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="primary" size="sm">
-                Small (44px)
-              </Button>
-
-              <Button variant="primary" size="md">
-                Medium (56px)
-              </Button>
-
-              <Button variant="primary" size="lg">
-                Large (64px)
-              </Button>
-
-              <Button
-                variant="secondary"
-                loading={loadingBtn}
-                onClick={toggleLoading}
-              >
-                {loadingBtn ? t('demo.btn_loading') : 'Click for Loading State'}
-              </Button>
-
-              <Button variant="primary" disabled>
-                {t('demo.btn_disabled')}
-              </Button>
-
-              <Button
-                variant="primary"
-                iconOnly
-                icon={<Heart size={20} />}
-                aria-label="Favorite department"
-                title="Favorite department"
-              />
-            </div>
-
-            {/* Full-width CTA demo */}
-            <Button
-              variant="primary"
-              fullWidth
-              icon={<ArrowRight size={20} />}
-              iconPosition="right"
-            >
-              Full Width Action Button
-            </Button>
-          </div>
-        </section>
-
-        <hr className="divider" aria-hidden="true" />
-
-        {/* Section 2: Status Badges (Always Icon + Text + Color) */}
-        <section aria-labelledby="section-badges">
-          <h2 id="section-badges" className="section-label">
-            {t('demo.section_badges')} (Always Icon + Color + Text)
-          </h2>
-          <p className="text-sm text-[var(--color-text-muted)] mb-3">
-            In Colorblind-Friendly Mode, these badges automatically display semantic indicator symbols and distinct typographic treatments.
-          </p>
-
-          <div className="flex flex-wrap gap-2.5">
-            <StatusBadge
-              variant="success"
-              label={t('demo.badge_success')}
-              icon={<CheckCircle size={15} aria-hidden="true" />}
-            />
-            <StatusBadge
-              variant="danger"
-              label={t('demo.badge_danger')}
-              icon={<AlertCircle size={15} aria-hidden="true" />}
-            />
-            <StatusBadge
-              variant="warning"
-              label={t('demo.badge_warning')}
-              icon={<AlertTriangle size={15} aria-hidden="true" />}
-            />
-            <StatusBadge
-              variant="info"
-              label={t('demo.badge_info')}
-              icon={<Info size={15} aria-hidden="true" />}
-            />
-            <StatusBadge
-              variant="neutral"
-              label={t('demo.badge_neutral')}
-            />
-          </div>
-        </section>
-
-        <hr className="divider" aria-hidden="true" />
-
-        {/* Section 3: Form Inputs & Selects */}
-        <section aria-labelledby="section-inputs">
-          <h2 id="section-inputs" className="section-label">
-            {t('demo.section_inputs')}
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Standard Text Input */}
-            <Input
-              id="demo-patient-name"
-              label={t('demo.input_label')}
-              placeholder={t('demo.input_placeholder')}
-              hint={t('demo.input_hint')}
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-              required
-            />
-
-            {/* Select Dropdown */}
-            <Select
-              id="demo-dept-select"
-              label={t('demo.select_label')}
-              placeholder={t('demo.select_placeholder')}
-              hint="Select which clinic you are visiting today"
-              options={departmentOptions}
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              required
-            />
-
-            {/* Input with Accessible Error State */}
-            <Input
-              id="demo-patient-phone"
-              label={t('demo.input_error_label')}
-              placeholder="e.g. 9876543210"
-              defaultValue="12345"
-              error={t('demo.input_error_msg')}
-              required
-            />
-
-            {/* Search Input style */}
-            <Input
-              id="demo-search"
-              label="Hospital Directory Search"
-              placeholder="Search doctors, wards, tests…"
-              hint="Press Enter or search icon to search"
-            />
-          </div>
-        </section>
-
-        <hr className="divider" aria-hidden="true" />
-
-        {/* Section 4: Cards */}
-        <section aria-labelledby="section-cards">
-          <h2 id="section-cards" className="section-label">
-            {t('demo.section_cards')}
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Standard Card using OptionCard structure */}
-            <OptionCard
-              as="div"
-              icon={<Building size={24} />}
-              title={t('demo.card_title')}
-              description="Token #OPD-1042"
-              badge={<StatusBadge variant="success" label="Active" />}
-              footer={
-                <div className="flex gap-2">
-                  <Button variant="primary" size="sm" icon={<ArrowRight size={16} />} iconPosition="right">
-                    View Directions
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    Cancel
-                  </Button>
-                </div>
-              }
-            >
-              <div className="flex flex-col gap-1.5 text-sm pt-2">
-                <div className="flex items-center gap-2">
-                  <User size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
-                  <span><strong>Doctor:</strong> Dr. Sharma (Cardiologist)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Building size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
-                  <span><strong>Location:</strong> Building A, 2nd Floor, Room 204</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} className="text-[var(--color-primary-500)]" aria-hidden="true" />
-                  <span><strong>Time:</strong> Today at 10:30 AM (Est. Wait: 15 min)</span>
-                </div>
-              </div>
-            </OptionCard>
-
-            {/* Interactive Card */}
-            <OptionCard
-              onClick={() => setCardClickCount((c) => c + 1)}
-              icon={<Heart size={24} />}
-              title={t('demo.card_interactive_title')}
-              description={t('demo.card_interactive_body')}
-              badge={<StatusBadge variant="info" label={`Clicks: ${cardClickCount}`} />}
-              footer={
-                <span className="text-sm font-semibold text-[var(--color-primary-500)]">
-                  Click to increment counter →
-                </span>
-              }
-            >
-              <p className="text-sm text-[var(--color-text-muted)] pt-2">
-                This card includes hover state styling, visible high-contrast focus rings, and keyboard accessibility via Enter/Space.
-              </p>
-            </OptionCard>
-
-            {/* Highlighted Card */}
-            <OptionCard
-              as="div"
-              highlighted
-              className="md:col-span-2 border-[var(--color-danger-500)] bg-[var(--color-danger-50)]/40"
-              icon={<AlertCircle size={24} className="text-[var(--color-danger-500)]" aria-hidden="true" />}
-              title="Emergency Protocols & Assistance"
-              description="If this is a medical emergency or trauma, do not wait in line. Proceed directly to Building E (Casualty & Emergency) or notify any hospital staff member immediately."
-              badge={<StatusBadge variant="danger" label="Priority Care" />}
-            />
-
-            {/* OptionCard Demo */}
-            <div className="md:col-span-2">
-              <h3 className="text-sm font-bold text-[var(--color-text-muted)] mb-2">OptionCard (Vertical Grid Layout)</h3>
-              <OptionCard
-                icon={<Sparkles size={24} />}
-                title="Accessible Option Card"
-                description="Designed with a CSS Grid layout ensuring icons never squeeze titles and descriptions span the full width."
-                badge={<StatusBadge variant="info" label="Recommended" />}
-                chevron={true}
-                onClick={() => {}}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5: Color Palette Verification */}
-        <section aria-labelledby="section-palette">
-          <h2 id="section-palette" className="section-label">
-            Colorblind-Safe Design Tokens (Okabe-Ito Palette)
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="card p-3 border-l-8 border-l-[var(--color-primary-500)]">
-              <span className="block text-xs text-[var(--color-text-muted)] uppercase font-bold">Primary Blue</span>
-              <span className="font-bold text-sm">#0072B2</span>
-              <span className="block text-xs mt-1 text-[var(--color-text-muted)]">Safe for all CVD types</span>
-            </div>
-            <div className="card p-3 border-l-8 border-l-[var(--color-accent-500)]">
-              <span className="block text-xs text-[var(--color-text-muted)] uppercase font-bold">Accent Orange</span>
-              <span className="font-bold text-sm">#E69F00</span>
-              <span className="block text-xs mt-1 text-[var(--color-text-muted)]">Safe for deuteranopia</span>
-            </div>
-            <div className="card p-3 border-l-8 border-l-[var(--color-success-500)]">
-              <span className="block text-xs text-[var(--color-text-muted)] uppercase font-bold">Success Teal</span>
-              <span className="font-bold text-sm">#009E73</span>
-              <span className="block text-xs mt-1 text-[var(--color-text-muted)]">Distinguishable from red</span>
-            </div>
-            <div className="card p-3 border-l-8 border-l-[var(--color-danger-500)]">
-              <span className="block text-xs text-[var(--color-text-muted)] uppercase font-bold">Danger Vermillion</span>
-              <span className="font-bold text-sm">#D55E00</span>
-              <span className="block text-xs mt-1 text-[var(--color-text-muted)]">Distinguishable from green</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Sticky Bottom Action Bar Component */}
-        <BottomActionBar>
-          <Button
-            variant="primary"
-            fullWidth
-            icon={<ArrowRight size={20} />}
-            iconPosition="right"
-            onClick={() => alert('Bottom Action Bar confirmed')}
+        {/* Floating / In-page Confirmation Toast */}
+        {toastMessage && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/80 border-2 border-emerald-400 text-emerald-900 dark:text-emerald-100 shadow-md flex items-center justify-between gap-3 animate-in fade-in"
           >
-            {t('common.confirm')} & {t('common.continue')}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setPatientName('');
-              setSelectedDept('');
-              setCardClickCount(0);
+            <div className="flex items-center gap-2.5 text-sm font-bold">
+              <Check className="text-emerald-600 shrink-0" size={20} />
+              <span>{toastMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="text-xs font-bold text-emerald-700 underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Two-tab notice card */}
+        <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-primary-50)] dark:bg-[var(--color-primary-950)] border-2 border-[var(--color-primary-300)] dark:border-[var(--color-primary-800)] flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-500)] text-white flex items-center justify-center shrink-0 shadow-xs">
+            <Laptop size={20} />
+          </div>
+          <div className="space-y-1 text-xs sm:text-sm">
+            <h2 className="font-black text-[var(--color-primary-900)] dark:text-[var(--color-primary-100)] text-sm sm:text-base">
+              Dual-Tab Testing Recommendation
+            </h2>
+            <p className="text-[var(--color-text-main)] leading-relaxed">
+              Open <strong>/patient/slip</strong> or <strong>/patient/live</strong> in one tab and{' '}
+              <strong>/staff/dashboard</strong> in a second tab of the <strong>SAME browser</strong> to watch live sync via
+              BroadcastChannel. Sync between completely different physical devices requires the production backend.
+            </p>
+          </div>
+        </div>
+
+        {/* Control Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 1. Reset all mock data */}
+          <button
+            type="button"
+            onClick={handleResetData}
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <RotateCcw size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base text-[var(--color-text-main)] block">
+                Reset All Mock Data
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Clears custom entries and restores default patient queues, department delays, and demo alerts.
+              </p>
+            </div>
+          </button>
+
+          {/* 2. Simulate "Your turn is coming soon" */}
+          <button
+            type="button"
+            onClick={handleSimulateTurnSoon}
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Bell size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base text-[var(--color-text-main)] block">
+                Simulate: "Your turn is coming soon"
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Broadcasts turn alert for CARD-1042, moves patient to position 1, and updates live room card.
+              </p>
+            </div>
+          </button>
+
+          {/* 3. Simulate "Consultation complete" */}
+          <button
+            type="button"
+            onClick={handleSimulateConsultComplete}
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <CheckCircle2 size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base text-[var(--color-text-main)] block">
+                Simulate: "Consultation complete"
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Marks consultation done, increments completed count, and pushes link to post-visit completion guide.
+              </p>
+            </div>
+          </button>
+
+          {/* 4. Simulate "Lab report ready" */}
+          <button
+            type="button"
+            onClick={handleSimulateReportReady}
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <FileCheck size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base text-[var(--color-text-main)] block">
+                Simulate: "Lab report ready"
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Dispatches pathology lab readiness notification leading to diagnostic reports viewer.
+              </p>
+            </div>
+          </button>
+
+          {/* 5. Simulate "Doctor on break (back at 11:30)" */}
+          <button
+            type="button"
+            onClick={handleSimulateDoctorBreak}
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Coffee size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base text-[var(--color-text-main)] block">
+                Simulate: "Doctor on break (back at 11:30)"
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Sets department status to doctor break with 11:30 AM resume time, updating patient tracker.
+              </p>
+            </div>
+          </button>
+
+          {/* 6. Simulate "New emergency alert from patient" */}
+          <button
+            type="button"
+            onClick={handleSimulateEmergency}
+            className="p-5 rounded-2xl border-2 text-left shadow-xs transition-all flex items-start gap-4 group border-[#D55E00]"
+            style={{
+              backgroundColor: 'var(--color-emergency-bg)',
+              color: 'var(--color-emergency-text)',
             }}
           >
-            {t('common.cancel')}
-          </Button>
-        </BottomActionBar>
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
+              style={{
+                backgroundColor: 'var(--color-emergency-btn-bg)',
+                color: 'var(--color-emergency-icon)',
+                border: '2px solid var(--color-emergency-border)',
+              }}
+            >
+              <AlertTriangle size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base block" style={{ color: 'var(--color-emergency-text)' }}>
+                Simulate: Patient Emergency Alert
+              </span>
+              <p className="text-xs leading-relaxed opacity-90">
+                Fires rapid response alert for Meera Rao near Lift B with siren and pinned staff dashboard banner.
+              </p>
+            </div>
+          </button>
+
+          {/* 7. Add 3 random walk-in guest patients */}
+          <button
+            type="button"
+            onClick={handleAddRandomGuests}
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <UserPlus size={24} />
+            </div>
+            <div className="space-y-1">
+              <span className="font-black text-base text-[var(--color-text-main)] block">
+                Add 3 Random Walk-in Guests
+              </span>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Appends 3 guest patients to the live queue with simulated clinical triage needs.
+              </p>
+            </div>
+          </button>
+
+          {/* 8. Link to /dev/store */}
+          <Link
+            to="/dev/store"
+            className="p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface-2)] text-left shadow-xs transition-all flex items-start gap-4 group"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[var(--color-primary-50)] text-[var(--color-primary-600)] dark:bg-[var(--color-primary-950)] dark:text-[var(--color-primary-300)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Zap size={24} />
+            </div>
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="font-black text-base text-[var(--color-text-main)] block">
+                  Advanced Store Inspector (/dev/store)
+                </span>
+                <ExternalLink size={16} className="text-[var(--color-text-muted)]" />
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)] leading-relaxed">
+                Direct raw store state visualizer with raw JSON inspector and granular department controls.
+              </p>
+            </div>
+          </Link>
+        </div>
+
+        {/* Live Store Stats Snapshot */}
+        <div className="p-4 sm:p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface-2)] space-y-3">
+          <h2 className="font-bold text-sm text-[var(--color-text-main)]">
+            Current Live Store Status (Synchronized across tabs)
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+              <span className="text-[var(--color-text-muted)] block">Queue Length</span>
+              <strong className="text-base text-[var(--color-text-main)]">{state.queue.length} patients</strong>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+              <span className="text-[var(--color-text-muted)] block">Active Emergencies</span>
+              <strong className="text-base text-red-600">
+                {(state.emergencyRequests || []).filter((e) => e.status !== 'resolved').length}
+              </strong>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+              <span className="text-[var(--color-text-muted)] block">Notifications</span>
+              <strong className="text-base text-[var(--color-text-main)]">
+                {state.notifications?.length || 0}
+              </strong>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+              <span className="text-[var(--color-text-muted)] block">Departments</span>
+              <strong className="text-base text-[var(--color-text-main)]">
+                {Object.keys(state.departments).length} active
+              </strong>
+            </div>
+          </div>
+        </div>
       </div>
     </BaseLayout>
   );

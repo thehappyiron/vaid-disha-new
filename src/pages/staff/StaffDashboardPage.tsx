@@ -153,89 +153,137 @@ export function StaffDashboardPage() {
 
         {/* ── 2. SUMMARY METRICS ROW (Waiting, In Progress, Completed, Emergencies) ── */}
         <section aria-label="Queue Summary Statistics" className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="p-4 rounded-2xl bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-xs flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center shrink-0">
-              <Clock size={24} aria-hidden="true" />
-            </div>
+          {/* Waiting Card */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-xs flex flex-col gap-2">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] block">
-                Waiting
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-[var(--color-text)]">
-                {totalWaiting}
-              </span>
+              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 flex items-center justify-center shrink-0">
+                <Clock size={22} aria-hidden="true" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-[var(--color-text)]">
+              {totalWaiting}
+            </div>
+            <div className="w-full text-sm sm:text-base font-bold text-[var(--color-text-muted)] break-words leading-tight">
+              Waiting
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-xs flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center justify-center shrink-0">
-              <UserCheck size={24} aria-hidden="true" />
-            </div>
+          {/* In Progress Card */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-xs flex flex-col gap-2">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] block">
-                In Progress
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-[var(--color-text)]">
-                {totalInProgress}
-              </span>
+              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 flex items-center justify-center shrink-0">
+                <UserCheck size={22} aria-hidden="true" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-[var(--color-text)]">
+              {totalInProgress}
+            </div>
+            <div className="w-full text-sm sm:text-base font-bold text-[var(--color-text-muted)] break-words leading-tight">
+              In progress
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-xs flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center shrink-0">
-              <CheckCircle2 size={24} aria-hidden="true" />
-            </div>
+          {/* Completed Today Card */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-[var(--color-surface)] border-2 border-[var(--color-border)] shadow-xs flex flex-col gap-2">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] block">
-                Completed Today
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-[var(--color-text)]">
-                {totalCompleted}
-              </span>
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={22} aria-hidden="true" />
+              </div>
+            </div>
+            <div className="text-3xl font-black text-[var(--color-text)]">
+              {totalCompleted}
+            </div>
+            <div className="w-full text-sm sm:text-base font-bold text-[var(--color-text-muted)] break-words leading-tight">
+              Completed today
             </div>
           </div>
 
+          {/* Active Emergencies Card with SOLID tokens */}
           <div
-            className={`p-4 rounded-2xl border-2 shadow-xs flex items-center gap-3.5 transition-colors ${
-              activeEmergencies.length > 0
-                ? 'bg-red-50 dark:bg-red-950/40 border-red-400 text-red-900 dark:text-red-200 animate-pulse'
-                : 'bg-[var(--color-surface)] border-[var(--color-border)]'
-            }`}
+            className="p-4 sm:p-5 rounded-2xl shadow-xs flex flex-col gap-2 transition-colors border-[3px]"
+            style={{
+              backgroundColor: activeEmergencies.length > 0 ? 'var(--color-emergency-bg)' : 'var(--color-surface)',
+              borderColor: activeEmergencies.length > 0 ? 'var(--color-emergency-border)' : 'var(--color-border)',
+              color: activeEmergencies.length > 0 ? 'var(--color-emergency-text)' : 'inherit',
+            }}
           >
-            <div className="w-12 h-12 rounded-xl bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 flex items-center justify-center shrink-0">
-              <AlertTriangle size={24} aria-hidden="true" />
-            </div>
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] block">
-                Active Emergencies
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-red-600 dark:text-red-400">
-                {activeEmergencies.length}
-              </span>
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: activeEmergencies.length > 0 ? 'var(--color-emergency-btn-bg)' : 'var(--color-surface-2)',
+                  color: activeEmergencies.length > 0 ? 'var(--color-emergency-icon)' : 'var(--color-text-muted)',
+                  border: activeEmergencies.length > 0 ? '2px solid var(--color-emergency-border)' : 'none',
+                }}
+              >
+                <AlertTriangle size={22} aria-hidden="true" />
+              </div>
+            </div>
+            <div
+              className="text-3xl font-black"
+              style={{
+                color: activeEmergencies.length > 0 ? 'var(--color-emergency-text)' : 'inherit',
+              }}
+            >
+              {activeEmergencies.length}
+            </div>
+            <div
+              className="w-full text-sm sm:text-base font-bold break-words leading-tight"
+              style={{
+                color: activeEmergencies.length > 0 ? 'var(--color-emergency-text)' : 'var(--color-text-muted)',
+              }}
+            >
+              Active emergencies
             </div>
           </div>
         </section>
 
-        {/* ── 3. PINNED EMERGENCY ALERTS PANEL ───────────────────────────────── */}
+        {/* ── 3. PINNED EMERGENCY ALERTS PANEL (Solid Tokens, id="emergencies") ── */}
         {activeEmergencies.length > 0 && (
           <section
+            id="emergencies"
+            role="alert"
+            aria-live="assertive"
             aria-labelledby="emergency-panel-title"
-            className="p-4 sm:p-5 rounded-2xl bg-red-50 dark:bg-red-950/40 border-3 border-red-500 shadow-md flex flex-col gap-3"
+            className="p-4 sm:p-5 rounded-2xl shadow-md flex flex-col gap-3"
+            style={{
+              backgroundColor: 'var(--color-emergency-bg)',
+              border: '3px solid var(--color-emergency-border)',
+              color: 'var(--color-emergency-text)',
+            }}
           >
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2.5">
-                <AlertTriangle size={22} className="text-red-600 animate-bounce shrink-0" aria-hidden="true" />
-                <h2 id="emergency-panel-title" className="text-base sm:text-lg font-black text-red-950 dark:text-red-100">
+                <AlertTriangle
+                  size={24}
+                  className="shrink-0"
+                  style={{ color: 'var(--color-emergency-icon)' }}
+                  aria-hidden="true"
+                />
+                <h2
+                  id="emergency-panel-title"
+                  className="text-base sm:text-lg font-black"
+                  style={{ color: 'var(--color-emergency-text)' }}
+                >
                   CRITICAL PATIENT ALERTS ({activeEmergencies.length})
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setSoundEnabled((prev) => !prev)}
-                className="btn btn-sm btn-ghost flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-red-300 dark:border-red-800 text-xs font-bold text-red-900 dark:text-red-200"
+                className="btn btn-sm flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black"
+                style={{
+                  backgroundColor: 'var(--color-emergency-btn-bg)',
+                  border: '2px solid var(--color-emergency-border)',
+                  color: 'var(--color-emergency-text)',
+                }}
                 aria-label={soundEnabled ? 'Mute alert sounds' : 'Enable alert sounds'}
               >
-                {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                {soundEnabled ? (
+                  <Volume2 size={16} aria-hidden="true" style={{ color: 'var(--color-emergency-icon)' }} />
+                ) : (
+                  <VolumeX size={16} aria-hidden="true" style={{ color: 'var(--color-emergency-icon)' }} />
+                )}
                 <span>Sound: {soundEnabled ? 'ON' : 'OFF'}</span>
               </button>
             </div>
@@ -247,35 +295,53 @@ export function StaffDashboardPage() {
                 return (
                   <div
                     key={emg.id}
-                    className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-slate-900 border border-red-300 dark:border-red-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+                    className="p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs"
+                    style={{
+                      backgroundColor: 'var(--color-emergency-btn-bg)',
+                      border: '2px solid var(--color-emergency-border)',
+                      color: 'var(--color-emergency-text)',
+                    }}
                   >
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono font-black text-sm px-2 py-0.5 rounded-md bg-red-100 text-red-900">
+                        <span
+                          className="font-mono font-black text-sm px-2.5 py-0.5 rounded-md"
+                          style={{
+                            backgroundColor: 'var(--color-emergency-bg)',
+                            border: '1.5px solid var(--color-emergency-border)',
+                            color: 'var(--color-emergency-text)',
+                          }}
+                        >
                           {emg.patientToken || 'EMG'}
                         </span>
-                        <span className="font-black text-base text-[var(--color-text)]">
+                        <span className="font-black text-base" style={{ color: 'var(--color-emergency-text)' }}>
                           {emg.patientName || 'Patient in Distress'}
                         </span>
-                        <span className="text-xs font-bold text-red-700 dark:text-red-400 ml-auto sm:ml-0 font-mono">
+                        <span
+                          className="text-xs font-bold ml-auto sm:ml-0 font-mono"
+                          style={{ color: 'var(--color-emergency-icon)' }}
+                        >
                           • {formatTimeAgo(emg.timestamp)}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs sm:text-sm text-[var(--color-text)] font-semibold flex-wrap">
-                        <span className="inline-flex items-center gap-1 text-[var(--color-primary-600)] font-bold">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm font-semibold flex-wrap">
+                        <span
+                          className="inline-flex items-center gap-1 font-bold"
+                          style={{ color: 'var(--color-emergency-icon)' }}
+                        >
                           <MapPin size={15} />
                           {emg.landmark}
                         </span>
                         {emg.symptoms?.length > 0 && (
-                          <span className="text-red-600 dark:text-red-400 font-bold">
+                          <span className="font-bold" style={{ color: 'var(--color-emergency-text)' }}>
                             [{emg.symptoms.join(', ')}]
                           </span>
                         )}
                       </div>
 
                       {emg.note && (
-                        <p className="text-xs text-[var(--color-text-muted)] italic">
+                        <p className="text-xs italic opacity-90">
                           "{emg.note}"
                         </p>
                       )}
@@ -283,27 +349,37 @@ export function StaffDashboardPage() {
 
                     <div className="flex items-center gap-2 shrink-0">
                       {!isResponding ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
+                        <button
+                          type="button"
                           onClick={() => acknowledgeEmergencyAlert(emg.id)}
-                          className="font-bold border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100 whitespace-normal break-words"
+                          className="px-3 py-1.5 rounded-xl text-xs font-black transition-all"
+                          style={{
+                            backgroundColor: 'var(--color-emergency-bg)',
+                            border: '2px solid var(--color-emergency-border)',
+                            color: 'var(--color-emergency-text)',
+                          }}
                         >
                           Acknowledge
-                        </Button>
+                        </button>
                       ) : (
-                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900">
+                        <span
+                          className="text-xs font-black px-2.5 py-1 rounded-lg"
+                          style={{
+                            backgroundColor: 'var(--color-emergency-bg)',
+                            border: '1.5px solid var(--color-emergency-border)',
+                            color: 'var(--color-emergency-text)',
+                          }}
+                        >
                           Attending Now
                         </span>
                       )}
-                      <Button
-                        variant="primary"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => resolveEmergencyAlert(emg.id)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold whitespace-normal break-words"
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-black text-white bg-emerald-700 hover:bg-emerald-800 border-2 border-emerald-900 transition-all shadow-xs"
                       >
                         Mark Attended
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 );
@@ -407,11 +483,16 @@ export function StaffDashboardPage() {
 
                 {/* Custom wait entry */}
                 <div className="flex items-center gap-2 pt-1">
+                  <label htmlFor="custom-wait-input" className="sr-only">
+                    Custom wait time in minutes
+                  </label>
                   <input
+                    id="custom-wait-input"
                     type="number"
                     min="1"
                     max="120"
                     placeholder="Custom mins"
+                    aria-label="Custom wait time in minutes"
                     value={customWaitInput}
                     onChange={(e) => setCustomWaitInput(e.target.value)}
                     className="input input-sm flex-1 text-sm rounded-xl py-2 px-3 border border-[var(--color-border)] bg-[var(--color-surface)]"
@@ -619,9 +700,9 @@ export function StaffDashboardPage() {
                       <tr
                         key={patient.id}
                         className={[
-                          'transition-colors hover:bg-[var(--color-surface-2)]/50',
-                          patient.isEmergency ? 'bg-red-50/60 dark:bg-red-950/20' : '',
-                          isInConsult ? 'bg-blue-50/50 dark:bg-blue-950/20 font-semibold' : '',
+                          'transition-colors hover:bg-[var(--color-surface-2)]',
+                          patient.isEmergency ? 'border-2 border-[var(--color-emergency-border)] bg-[var(--color-emergency-bg)] text-[var(--color-emergency-text)]' : '',
+                          isInConsult ? 'bg-[var(--color-primary-50)] dark:bg-[var(--color-primary-950)] font-semibold' : '',
                         ].join(' ')}
                       >
                         {/* Token */}
@@ -822,14 +903,28 @@ export function StaffDashboardPage() {
                   key={patient.id}
                   className={[
                     'p-4 rounded-2xl border-2 bg-[var(--color-surface)] shadow-xs flex flex-col gap-3',
-                    patient.isEmergency ? 'border-red-400 bg-red-50/40' : 'border-[var(--color-border)]',
-                    isInConsult ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]/30' : '',
+                    patient.isEmergency
+                      ? 'border-[3px] border-[var(--color-emergency-border)] bg-[var(--color-emergency-bg)] text-[var(--color-emergency-text)]'
+                      : isInConsult
+                      ? 'border-2 border-[var(--color-primary-500)] bg-[var(--color-primary-50)] dark:bg-[var(--color-primary-950)]'
+                      : 'border-[var(--color-border)]',
                   ].join(' ')}
                 >
+                  {/* Token and Name */}
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)]">
-                      {patient.token}
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)]">
+                        {patient.token}
+                      </span>
+                      <div className="font-bold text-base text-[var(--color-text)]">
+                        {renderPatientName(patient)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Badges in a wrapping row */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {/* Status Badge */}
                     <StatusBadge
                       variant={
                         patient.isEmergency
@@ -854,46 +949,55 @@ export function StaffDashboardPage() {
                           : 'Waiting'
                       }
                     />
-                  </div>
 
-                  <div>
-                    {renderPatientName(patient)}
-                    <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mt-0.5">
-                      {patient.purpose || 'General Consultation'} • {isInConsult ? 'Attending now' : `Wait: ${patient.estimatedWaitMinutes} min`}
-                    </p>
-                  </div>
+                    {/* Wait Time Badge */}
+                    {!isCompleted && (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)]">
+                        <Clock size={12} aria-hidden="true" />
+                        {isInConsult ? 'Attending now' : `Wait: ${patient.estimatedWaitMinutes}m`}
+                      </span>
+                    )}
 
-                  {/* Accessibility badge */}
-                  {patient.accessibilityNeeds && patient.accessibilityNeeds.length > 0 && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {patient.accessibilityNeeds.map((need, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300"
-                        >
-                          ♿ {need.replace('_', ' ')}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                    {/* Department / Purpose Badge */}
+                    <span className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text-muted)] truncate max-w-[200px]">
+                      {patient.purpose || 'General Consultation'}
+                    </span>
+
+                    {/* Accessibility Badges */}
+                    {patient.accessibilityNeeds && patient.accessibilityNeeds.length > 0 && (
+                      <>
+                        {patient.accessibilityNeeds.map((need, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+                          >
+                            ♿ {need.replace('_', ' ')}
+                          </span>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Priority Tag */}
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-800">
+                      {explanation.badge}
+                    </span>
+                  </div>
 
                   {/* Plain language priority explanation */}
                   <div className="p-2.5 rounded-xl bg-[var(--color-surface-2)] text-xs text-[var(--color-text)] leading-snug flex items-start gap-1.5">
                     <Info size={15} className="shrink-0 text-[var(--color-primary-500)] mt-0.5" />
-                    <span>
-                      <strong>{explanation.badge}:</strong> {explanation.reason}
-                    </span>
+                    <span>{explanation.reason}</span>
                   </div>
 
-                  {/* Mobile Actions */}
-                  <div className="flex items-center gap-2 pt-1 border-t border-[var(--color-border)] flex-wrap">
+                  {/* Action buttons full width */}
+                  <div className="flex flex-col gap-2 pt-2 border-t border-[var(--color-border)]">
                     {isInConsult ? (
                       <Button
                         variant="secondary"
                         fullWidth
                         icon={<Check size={16} />}
                         onClick={() => completePatientConsultation(patient.token)}
-                        className="font-bold min-h-12 bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 whitespace-normal break-words"
+                        className="font-bold min-h-12 bg-emerald-700 hover:bg-emerald-800 text-white border-2 border-emerald-900 whitespace-normal break-words"
                       >
                         Mark Consultation Complete
                       </Button>
@@ -901,39 +1005,48 @@ export function StaffDashboardPage() {
                       <>
                         <Button
                           variant="primary"
+                          fullWidth
                           icon={<Play size={15} />}
                           onClick={() => startPatientConsultation(patient.token)}
-                          className="flex-1 font-bold min-h-12 whitespace-normal break-words"
+                          className="font-bold min-h-12 whitespace-normal break-words"
                         >
-                          Start
+                          Start Consultation
                         </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => postponePatient(patient.token)}
-                          className="font-bold min-h-12 border border-[var(--color-border)] whitespace-normal break-words px-3"
-                        >
-                          Postpone
-                        </Button>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => movePatientQueue(patient.token, 'up')}
-                            className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)]"
-                            aria-label="Move up"
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => postponePatient(patient.token)}
+                            className="font-bold min-h-12 border border-[var(--color-border)] whitespace-normal break-words"
                           >
-                            <ArrowUp size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => movePatientQueue(patient.token, 'down')}
-                            className="p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)]"
-                            aria-label="Move down"
-                          >
-                            <ArrowDown size={16} />
-                          </button>
+                            Postpone
+                          </Button>
+                          <div className="grid grid-cols-2 gap-1">
+                            <button
+                              type="button"
+                              onClick={() => movePatientQueue(patient.token, 'up')}
+                              className="min-h-12 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] font-bold text-xs flex items-center justify-center gap-1"
+                              aria-label="Move up"
+                            >
+                              <ArrowUp size={14} />
+                              <span>Up</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => movePatientQueue(patient.token, 'down')}
+                              className="min-h-12 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] font-bold text-xs flex items-center justify-center gap-1"
+                              aria-label="Move down"
+                            >
+                              <ArrowDown size={14} />
+                              <span>Down</span>
+                            </button>
+                          </div>
                         </div>
                       </>
-                    ) : null}
+                    ) : (
+                      <div className="text-center py-1 text-xs font-bold text-[var(--color-text-muted)]">
+                        Consultation Completed & Archived
+                      </div>
+                    )}
                   </div>
                 </div>
               );

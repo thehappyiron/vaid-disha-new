@@ -91,6 +91,15 @@
   --color-text-on-primary: #ffffff;
   --color-focus-ring:   #0072B2;
 
+  /* Solid Emergency Tokens (contrast >= 7:1) */
+  --color-emergency-bg:         #FDECE4;
+  --color-emergency-border:     #D55E00;
+  --color-emergency-text:       #3D1500;
+  --color-emergency-icon:       #B34700;
+  --color-emergency-btn-bg:     #FFFFFF;
+  --color-emergency-btn-text:   #3D1500;
+  --color-emergency-btn-border: #D55E00;
+
   /* ── Typography ─────────────────────────────────────────── */
   --font-family-base:
     'Atkinson Hyperlegible Next',
@@ -157,6 +166,15 @@
     --color-text:         #f3f4f6;
     --color-text-muted:   #9ca3af;
     --color-focus-ring:   #4da5e3;
+
+    /* Emergency tokens for dark mode */
+    --color-emergency-bg:         #2B0C02;
+    --color-emergency-border:     #FF7729;
+    --color-emergency-text:       #FFF0E8;
+    --color-emergency-icon:       #FFA066;
+    --color-emergency-btn-bg:     #401404;
+    --color-emergency-btn-text:   #FFF0E8;
+    --color-emergency-btn-border: #FF7729;
   }
   html.theme-dark .card {
     background-color: var(--color-surface);
@@ -194,6 +212,21 @@
     --color-surface:    #ffffff;
     --color-surface-2:  #e5e5e5;
     --color-text-muted: #111111;
+
+    /* Emergency tokens for high contrast */
+    --color-emergency-bg:         #FFFFFF;
+    --color-emergency-border:     #D55E00;
+    --color-emergency-text:       #000000;
+    --color-emergency-icon:       #8A2E00;
+    --color-emergency-btn-bg:     #FFFFFF;
+    --color-emergency-btn-text:   #000000;
+    --color-emergency-btn-border: #000000;
+    --color-focus-ring:           #000000;
+  }
+  html.high-contrast *:focus-visible,
+  html.theme-high-contrast *:focus-visible {
+    outline: 4px solid #000000 !important;
+    outline-offset: 3px;
   }
   html.high-contrast .card,
   html.theme-high-contrast .card           { border-width: 2.5px; border-color: #000000; }
