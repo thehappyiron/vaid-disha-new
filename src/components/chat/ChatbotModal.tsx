@@ -47,6 +47,22 @@ function getStoredSlip(): Slip | null {
   }
 }
 
+function getVoiceInputErrorMessage(error: unknown): string {
+  const name = error instanceof DOMException ? error.name : '';
+  const message = error instanceof Error ? error.message : '';
+
+  if (name === 'NotAllowedError' || /permission|notallowed/i.test(message)) {
+    return 'Microphone permission is blocked. Allow microphone access for localhost, then try again.';
+  }
+  if (/no speech|no microphone audio/i.test(message)) {
+    return 'No speech was detected. Hold the microphone closer and try again.';
+  }
+  if (/Sarvam transcription failed/i.test(message)) {
+    return 'The voice service could not transcribe this recording. Please try speaking again.';
+  }
+  return 'Voice input could not start. Check your microphone and try again.';
+}
+
 export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -67,6 +83,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
   });
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [speakReplies, setSpeakReplies] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(SPEAK_REPLIES_KEY) === 'true';
@@ -142,7 +159,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
 
   // Send message
   const handleSendMessage = useCallback(
-    async (textToSend?: string) => {
+    async (textToSend?: string, requestedLanguage = currentLang) => {
       const text = (textToSend || inputMessage).trim();
       if (!text) return;
 
@@ -151,6 +168,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
         sender: 'user',
         text,
         timestamp: Date.now(),
+        language: requestedLanguage,
       };
 
       setMessages((prev) => [...prev, userMsg]);
@@ -162,7 +180,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
       try {
         const response: ChatResponse = await sendChatMessage({
           message: text,
-          language: currentLang,
+          language: requestedLanguage,
           context: {
             userType: isGuest ? 'guest' : user ? 'registered' : 'guest',
             slipId: slip?.id,
@@ -190,7 +208,9 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
 
         // Speak aloud if speak replies toggle is active
         if (speakReplies) {
-          textToSpeech.speak(response.text, response.language || currentLang);
+          textToSpeech.speak(response.text, response.language || currentLang, {
+            onError: () => setVoiceError('Voice reply is unavailable. You can still read the answer on screen.'),
+          });
         }
       } catch (err) {
         console.error('Failed to get bot response', err);
@@ -215,22 +235,26 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
       speechToText.stop();
       setIsListening(false);
     } else {
+      setVoiceError(null);
       if (!speechToText.isSupported()) {
-        alert('Voice microphone input is not supported in this browser.');
+        setVoiceError('Microphone input is not supported in this browser.');
         return;
       }
       setIsListening(true);
       speechToText.start(
         currentLang,
-        (transcript: string, isFinal: boolean) => {
+        (transcript: string, isFinal: boolean, detectedLanguage?: string) => {
           setInputMessage(transcript);
           if (isFinal) {
             setIsListening(false);
-            speechToText.stop();
+            // A completed recording is a complete voice query: send it straight
+            // to the hospital assistant so the user does not need to find Send.
+            handleSendMessage(transcript, detectedLanguage && detectedLanguage !== 'unknown' ? detectedLanguage : currentLang);
           }
         },
-        () => {
+        (error) => {
           setIsListening(false);
+          setVoiceError(getVoiceInputErrorMessage(error));
         }
       );
     }
@@ -271,7 +295,10 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
 
   // Read message aloud
   const handleSpeakSingleMessage = (msg: ChatMessage) => {
-    textToSpeech.speak(msg.text, msg.language || currentLang);
+    setVoiceError(null);
+    textToSpeech.speak(msg.text, msg.language || currentLang, {
+      onError: () => setVoiceError('Voice reply is unavailable. You can still read the answer on screen.'),
+    });
   };
 
   // Quick reply click
@@ -304,9 +331,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[var(--color-primary-500)] text-white flex items-center justify-center shadow-xs">
-              <Bot size={22} />
-            </div>
+            <img src="/images/chat-mascot.png" alt="" className="w-12 h-12 object-contain" />
             <div>
               <div className="flex items-center gap-1.5">
                 <h2 className="text-sm sm:text-base font-black text-[var(--color-text)]">
@@ -381,6 +406,8 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
             </button>
           ))}
         </div>
+
+        {voiceError && <div role="status" className="mx-3 mt-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">{voiceError}</div>}
 
         {/* Scrollable message list with aria-live */}
         <div

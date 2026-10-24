@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 220" role="img" aria-label="Vaid Disha hospital help mascot">
+  <g stroke="#171717" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M74 31c14-17 79-17 94 0l16 20v106c0 29-24 51-54 51h-20c-30 0-54-22-54-51V51z" fill="#fff" stroke-width="10"/>
+    <path d="M45 104c-23 5-24 46 2 51M195 104c23 5 24 46-2 51" fill="none" stroke-width="10"/>
+    <rect x="59" y="72" width="122" height="95" rx="26" fill="#ffd45b" stroke-width="10"/>
+    <ellipse cx="96" cy="118" rx="8" ry="12" fill="#171717" stroke="none"/>
+    <ellipse cx="145" cy="118" rx="8" ry="12" fill="#171717" stroke="none"/>
+    <path d="M112 142c9 10 18 10 27 0" fill="none" stroke-width="7"/>
+    <path d="M119 30V17M95 16c12-13 38-13 50 0M82 4c20-19 56-19 76 0" fill="none" stroke="#f7bd2e" stroke-width="9"/>
+    <path d="M160 42c0-23 22-38 43-30 27 10 26 50-3 56l-23 11 5-15c-13-6-22-12-22-22z" fill="#fff" stroke-width="8"/>
+    <circle cx="177" cy="53" r="4" fill="#171717" stroke="none"/><circle cx="190" cy="53" r="4" fill="#171717" stroke="none"/><circle cx="203" cy="53" r="4" fill="#171717" stroke="none"/>
+  </g>
+</svg>

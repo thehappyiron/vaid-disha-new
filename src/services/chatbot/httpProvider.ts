@@ -12,11 +12,11 @@ export class HttpChatProvider implements ChatProvider {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    this.baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   }
 
   public async sendMessage(req: ChatRequest): Promise<ChatResponse> {
-    const endpoint = `${this.baseUrl}/chat`;
+    const endpoint = `${this.baseUrl.replace(/\/$/, '')}/chat`;
 
     try {
       const response = await fetch(endpoint, {

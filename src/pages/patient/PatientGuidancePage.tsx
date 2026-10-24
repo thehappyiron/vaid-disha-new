@@ -70,6 +70,7 @@ export function PatientGuidancePage() {
   const [autoVoice, setAutoVoice] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isArrived, setIsArrived] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
   // Modals
   const [showStaffModal, setShowStaffModal] = useState(false);
@@ -178,13 +179,20 @@ export function PatientGuidancePage() {
 
   // Speak current instruction
   const speakCurrentStep = (stepText: string) => {
-    if (!voiceService.isSupported()) return;
+    if (!voiceService.isSupported()) {
+      setVoiceError('Voice temporarily unavailable. Continue using the on-screen directions.');
+      return;
+    }
+    setVoiceError(null);
     setIsSpeaking(true);
     voiceService.speak(stepText, {
       lang: i18n.language,
       onStart: () => setIsSpeaking(true),
       onEnd: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
+      onError: () => {
+        setIsSpeaking(false);
+        setVoiceError('Voice temporarily unavailable. Continue using the on-screen directions.');
+      },
     });
   };
 
@@ -520,6 +528,11 @@ export function PatientGuidancePage() {
         {/* ═════════════════════════════════════════════════════════════════════
             STEP 2: ROUTE NAVIGATION DISPLAY
             ═════════════════════════════════════════════════════════════════════ */}
+        {startNode && destinationNode && !routeResult && (
+          <div role="alert" className="p-4 rounded-xl border-2 border-amber-300 bg-amber-50 text-amber-950 font-semibold">
+            {hasMobilityNeeds ? 'No step-free route is available for this destination.' : 'No route is available between these locations.'}
+          </div>
+        )}
         {startNode && routeResult && (
           <div className="flex flex-col gap-4 animate-fadeIn">
             {/* Route Summary Bar */}
@@ -710,10 +723,10 @@ export function PatientGuidancePage() {
                               {getStepInstructionText(currentStep)}
                             </h3>
 
-                            {currentStep.params.distance && (
-                              <span className="inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
-                                Distance: ~{currentStep.params.distance} metres
-                              </span>
+                            {voiceError && (
+                              <p role="status" className="mt-3 text-sm font-semibold text-amber-800">
+                                {voiceError}
+                              </p>
                             )}
                           </div>
 

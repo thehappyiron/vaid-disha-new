@@ -24,7 +24,7 @@ export interface TextToSpeech {
 export interface SpeechToText {
   start(
     lang: string,
-    onResult: (transcript: string, isFinal: boolean) => void,
+    onResult: (transcript: string, isFinal: boolean, detectedLanguage?: string) => void,
     onError?: (error: unknown) => void
   ): void;
   stop(): void;

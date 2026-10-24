@@ -164,7 +164,9 @@ export function getNodeById(id: string): GraphNode | undefined {
 }
 
 /**
- * Shortest path computation using Dijkstra's Algorithm
+ * Deterministic Dijkstra route computation. The current graph's x/y values
+ * are display coordinates, not measured distances, so an A* heuristic would
+ * risk selecting a non-shortest route.
  */
 export function computeRoute(
   startId: string,
@@ -216,19 +218,20 @@ export function computeRoute(
   distances.set(startId, 0);
 
   while (unvisited.size > 0) {
-    // Pick unvisited node with lowest distance
+    // Pick the lowest known cost. Stable IDs resolve equal routes deterministically.
     let currentId: string | null = null;
-    let lowestDist = Infinity;
+    let lowestScore = Infinity;
 
     for (const id of unvisited) {
       const d = distances.get(id)!;
-      if (d < lowestDist) {
-        lowestDist = d;
+      const score = d;
+      if (score < lowestScore || (score === lowestScore && currentId !== null && id < currentId)) {
+        lowestScore = score;
         currentId = id;
       }
     }
 
-    if (!currentId || lowestDist === Infinity) {
+    if (!currentId || distances.get(currentId) === Infinity) {
       break; // No path available
     }
 
@@ -247,7 +250,7 @@ export function computeRoute(
         continue;
       }
 
-      const alt = lowestDist + neighbor.distance;
+      const alt = distances.get(currentId)! + neighbor.distance;
       if (alt < distances.get(neighbor.nodeId)!) {
         distances.set(neighbor.nodeId, alt);
         previous.set(neighbor.nodeId, { nodeId: currentId, edge: neighbor.edge });

@@ -16,7 +16,7 @@ export * from './httpProvider';
 export * from './sarvamProvider';
 
 function createChatProvider(): ChatProvider {
-  const providerType = (import.meta.env.VITE_CHAT_PROVIDER || 'mock').toLowerCase();
+  const providerType = (import.meta.env.VITE_CHAT_PROVIDER || 'http').toLowerCase();
 
   if (providerType === 'http') {
     return new HttpChatProvider();
