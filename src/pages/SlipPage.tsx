@@ -385,308 +385,313 @@ export function SlipPage() {
         {/* ══════════════════════════════════════════════════════════════════
             THE PRINTABLE HOSPITAL SLIP (Heart of the App)
             ══════════════════════════════════════════════════════════════════ */}
-        <article
-          id="hospital-printable-slip"
-          aria-label={t('slip.page_title')}
-          className={[
-            'card border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] shadow-md rounded-2xl',
-            'p-5 sm:p-6 flex flex-col gap-4 relative overflow-hidden',
-            // Printable paper effect styling
-            'print:border-2 print:border-black print:shadow-none print:p-4',
-          ].join(' ')}
-        >
-          {/* Hospital Header & Subtitle */}
-          <div className="border-b-2 border-dashed border-[var(--color-border)] pb-3 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div>
-              <span className="text-xs font-black uppercase tracking-widest text-[var(--color-primary-700)] block">
-                {t('slip.hospital_title')}
-              </span>
-              <span className="text-xs font-bold text-[var(--color-text-muted)] tracking-wider">
-                {t('slip.slip_subtitle')}
-              </span>
-            </div>
-            <span className="text-xs text-[var(--color-text-muted)] font-mono">
-              {formatDate(slip.generatedAt)} • {formatTime(slip.generatedAt)}
-            </span>
-          </div>
-
-          {/* 1. Large Token Number & Patient Name (with Guest badge if guest) */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-1">
-            <div>
-              <span className="text-xs uppercase font-extrabold tracking-wider text-[var(--color-text-muted)] block mb-0.5">
-                {t('slip.your_token')}
-              </span>
-              <h1
-                ref={headingRef}
-                tabIndex={-1}
-                className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-[var(--color-primary-500)] leading-none"
-                aria-label={t('a11y.token_label', { token: slip.token })}
-              >
-                {slip.token}
-              </h1>
-            </div>
-
-            <div className="flex flex-col sm:items-end">
-              <span className="text-xs uppercase font-bold text-[var(--color-text-muted)]">
-                {t('slip.patient_label')}
-              </span>
-              <span className="font-extrabold text-xl sm:text-2xl text-[var(--color-text)]">
-                {slip.patientName || 'Patient'}
-              </span>
-              <div className="mt-1">
-                {isGuestUser ? (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                    {t('slip.guest_badge')}
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-300">
-                    {t('slip.registered_badge')}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <hr className="divider border-t-2 border-[var(--color-border)] my-1" />
-
-          {/* 2. Department, Doctor, Room, Floor – Large and clear with icons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-            {/* Department */}
-            <OptionCard
-              as="div"
-              icon={<Building2 size={22} aria-hidden="true" />}
-              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
-              title={t('slip.department')}
-              description={t(slip.department.nameKey)}
-              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
-            />
-
-            {/* Doctor */}
-            <OptionCard
-              as="div"
-              icon={<Stethoscope size={22} aria-hidden="true" />}
-              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
-              title={t('slip.doctor')}
-              description={slip.doctorName || slip.department.doctorName || 'Doctor on Duty'}
-              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
-            />
-
-            {/* Room */}
-            <OptionCard
-              as="div"
-              icon={<DoorClosed size={22} aria-hidden="true" />}
-              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
-              title={t('slip.room')}
-              description={`Room ${slip.roomNumber || slip.department.roomNumbers[0]}`}
-              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
-            />
-
-            {/* Floor & Wing */}
-            <OptionCard
-              as="div"
-              icon={<Layers size={22} aria-hidden="true" />}
-              iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
-              title={t('slip.floor')}
-              description={`${floorLabel(slip.floor, t)} • ${slip.wing || slip.department.wing || 'West Wing'} (Bldg ${slip.department.building})`}
-              className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
-            />
-          </div>
-
-          <hr className="divider border-t-2 border-[var(--color-border)] my-1" />
-
-          {/* 3. Live Status Badge & 4. Estimated Wait Time and People Ahead */}
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                {t('slip.live_status')}
-              </span>
-              <StatusBadge
-                variant={statusConfig.variant}
-                icon={statusConfig.icon}
-                label={statusConfig.label}
-              />
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-[var(--color-warning-50)] border-2 border-[var(--color-warning-300)] flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2.5">
-                <Clock size={20} className="text-[var(--color-warning-700)] shrink-0" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start w-full">
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 1 (Left on desktop): THE PRINTABLE HOSPITAL SLIP DETAILS
+              ══════════════════════════════════════════════════════════════════ */}
+          <div className="flex flex-col gap-4">
+            <article
+              id="hospital-printable-slip"
+              aria-label={t('slip.page_title')}
+              className={[
+                'card border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] shadow-md rounded-2xl',
+                'p-5 sm:p-6 flex flex-col gap-4 relative overflow-hidden',
+                // Printable paper effect styling
+                'print:border-2 print:border-black print:shadow-none print:p-4',
+              ].join(' ')}
+            >
+              {/* Hospital Header & Subtitle */}
+              <div className="border-b-2 border-dashed border-[var(--color-border)] pb-3 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-2">
                 <div>
-                  <span className="text-xs text-[var(--color-warning-900)] font-bold block">
-                    {t('slip.estimated_wait')}
+                  <span className="text-xs font-black uppercase tracking-widest text-[var(--color-primary-700)] block">
+                    {t('slip.hospital_title')}
                   </span>
-                  <span className="text-base sm:text-lg font-black text-[var(--color-warning-950)]">
-                    {slip.estimatedWait === 0
-                      ? t('slip.no_wait')
-                      : t('slip.minutes_wait', { minutes: slip.estimatedWait })}
+                  <span className="text-xs font-bold text-[var(--color-text-muted)] tracking-wider">
+                    {t('slip.slip_subtitle')}
                   </span>
+                </div>
+                <span className="text-xs text-[var(--color-text-muted)] font-mono">
+                  {formatDate(slip.generatedAt)} • {formatTime(slip.generatedAt)}
+                </span>
+              </div>
+
+              {/* 1. Large Token Number & Patient Name (with Guest badge if guest) */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-1">
+                <div>
+                  <span className="text-xs uppercase font-extrabold tracking-wider text-[var(--color-text-muted)] block mb-0.5">
+                    {t('slip.your_token')}
+                  </span>
+                  <h1
+                    ref={headingRef}
+                    tabIndex={-1}
+                    className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-[var(--color-primary-500)] leading-none"
+                    aria-label={t('a11y.token_label', { token: slip.token })}
+                  >
+                    {slip.token}
+                  </h1>
+                </div>
+
+                <div className="flex flex-col sm:items-end">
+                  <span className="text-xs uppercase font-bold text-[var(--color-text-muted)]">
+                    {t('slip.patient_label')}
+                  </span>
+                  <span className="font-extrabold text-xl sm:text-2xl text-[var(--color-text)]">
+                    {slip.patientName || 'Patient'}
+                  </span>
+                  <div className="mt-1">
+                    {isGuestUser ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        {t('slip.guest_badge')}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-900 border border-blue-300">
+                        {t('slip.registered_badge')}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="text-right">
-                <span className="text-xs text-[var(--color-warning-900)] font-bold block">
-                  Queue Position
-                </span>
-                <span className="text-base font-extrabold text-[var(--color-warning-950)]">
-                  {slip.peopleAhead !== undefined && slip.peopleAhead > 0
-                    ? t('slip.people_ahead', { count: slip.peopleAhead })
-                    : t('slip.people_ahead_zero')}
-                </span>
+              <hr className="divider border-t-2 border-[var(--color-border)] my-1" />
+
+              {/* 2. Department, Doctor, Room, Floor – Large and clear with icons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                {/* Department */}
+                <OptionCard
+                  as="div"
+                  icon={<Building2 size={22} aria-hidden="true" />}
+                  iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+                  title={t('slip.department')}
+                  description={t(slip.department.nameKey)}
+                  className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+                />
+
+                {/* Doctor */}
+                <OptionCard
+                  as="div"
+                  icon={<Stethoscope size={22} aria-hidden="true" />}
+                  iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+                  title={t('slip.doctor')}
+                  description={slip.doctorName || slip.department.doctorName || 'Doctor on Duty'}
+                  className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+                />
+
+                {/* Room */}
+                <OptionCard
+                  as="div"
+                  icon={<DoorClosed size={22} aria-hidden="true" />}
+                  iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+                  title={t('slip.room')}
+                  description={`Room ${slip.roomNumber || slip.department.roomNumbers[0]}`}
+                  className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+                />
+
+                {/* Floor & Wing */}
+                <OptionCard
+                  as="div"
+                  icon={<Layers size={22} aria-hidden="true" />}
+                  iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
+                  title={t('slip.floor')}
+                  description={`${floorLabel(slip.floor, t)} • ${slip.wing || slip.department.wing || 'West Wing'} (Bldg ${slip.department.building})`}
+                  className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
+                />
               </div>
-            </div>
+
+              <hr className="divider border-t-2 border-[var(--color-border)] my-1" />
+
+              {/* 3. Live Status Badge & 4. Estimated Wait Time and People Ahead */}
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    {t('slip.live_status')}
+                  </span>
+                  <StatusBadge
+                    variant={statusConfig.variant}
+                    icon={statusConfig.icon}
+                    label={statusConfig.label}
+                  />
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-[var(--color-warning-50)] border-2 border-[var(--color-warning-300)] flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <Clock size={20} className="text-[var(--color-warning-700)] shrink-0" />
+                    <div>
+                      <span className="text-xs text-[var(--color-warning-900)] font-bold block">
+                        {t('slip.estimated_wait')}
+                      </span>
+                      <span className="text-base sm:text-lg font-black text-[var(--color-warning-950)]">
+                        {slip.estimatedWait === 0
+                          ? t('slip.no_wait')
+                          : t('slip.minutes_wait', { minutes: slip.estimatedWait })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xs text-[var(--color-warning-900)] font-bold block">
+                      Queue Position
+                    </span>
+                    <span className="text-base font-extrabold text-[var(--color-warning-950)]">
+                      {slip.peopleAhead !== undefined && slip.peopleAhead > 0
+                        ? t('slip.people_ahead', { count: slip.peopleAhead })
+                        : t('slip.people_ahead_zero')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save slip status indicator */}
+              {!isGuestUser ? (
+                <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs sm:text-sm font-semibold">
+                  <CheckCircle size={18} className="text-emerald-600 shrink-0" />
+                  <span>{t('slip.auto_saved_notice')}</span>
+                  <Link to="/patient/history" className="ml-auto underline font-bold text-xs sm:text-sm shrink-0">
+                    {t('slip.view_history_btn')} →
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs font-medium flex-wrap">
+                  <span>{t('history.guest_desc')}</span>
+                  <Link to="/patient/start" className="underline font-bold text-xs shrink-0 text-amber-950">
+                    {t('history.guest_login_btn')}
+                  </Link>
+                </div>
+              )}
+            </article>
           </div>
 
-          {/* 5. A short "How to reach" text box with speaker button */}
-          <div className="p-4 rounded-xl bg-[var(--color-primary-50)]/70 border-2 border-[var(--color-primary-300)] flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-black uppercase tracking-wider text-[var(--color-primary-800)] flex items-center gap-1.5">
-                <Sparkles size={15} aria-hidden="true" />
-                {t('slip.how_to_reach_title')}
+          {/* ══════════════════════════════════════════════════════════════════
+              COLUMN 2 (Right on desktop): "HOW TO REACH" + ACTION BUTTONS
+              ══════════════════════════════════════════════════════════════════ */}
+          <div className="flex flex-col gap-4">
+            {/* 5. A short "How to reach" text box with speaker button */}
+            <div className="p-4 rounded-2xl bg-[var(--color-primary-50)]/70 border-2 border-[var(--color-primary-300)] flex flex-col gap-2.5 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-[var(--color-primary-800)] flex items-center gap-1.5">
+                  <Sparkles size={15} aria-hidden="true" />
+                  {t('slip.how_to_reach_title')}
+                </span>
+
+                {/* TTS Speaker Button */}
+                <button
+                  type="button"
+                  onClick={handleSpeakDirections}
+                  className={[
+                    'btn btn-sm px-3 rounded-full flex items-center gap-1.5 transition-all',
+                    isSpeaking
+                      ? 'btn-primary animate-pulse'
+                      : 'btn-secondary bg-white text-[var(--color-primary-600)] border border-[var(--color-primary-400)]',
+                  ].join(' ')}
+                  aria-label={isSpeaking ? t('slip.stop_listening') : t('slip.listen_directions')}
+                  title={isSpeaking ? t('slip.stop_listening') : t('slip.listen_directions')}
+                >
+                  {isSpeaking ? (
+                    <>
+                      <VolumeX size={16} />
+                      <span className="text-xs font-bold">{t('slip.stop_listening')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 size={16} />
+                      <span className="text-xs font-bold">{t('slip.listen_directions')}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <p className="text-base font-bold text-[var(--color-primary-950)] leading-relaxed break-words">
+                "{slip.humanReadableDirection || 'Follow the hospital main corridor to the department counter.'}"
+              </p>
+            </div>
+
+            {/* 6. PRIMARY BUTTON: "Help me find the way" */}
+            <div>
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                icon={<Navigation size={22} />}
+                onClick={() =>
+                  navigate(`/patient/guidance/${slip.id}`, {
+                    state: { departmentId: slip.department.id, slip },
+                  })
+                }
+              >
+                {t('slip.help_find_way')}
+              </Button>
+            </div>
+
+            {/* 7. SECONDARY BUTTONS */}
+            <div className="flex flex-col gap-2.5">
+              {/* I need urgent attention */}
+              <Button
+                variant="danger"
+                fullWidth
+                icon={<AlertTriangle size={18} />}
+                onClick={() => navigate('/patient/emergency')}
+              >
+                {t('slip.urgent_attention')}
+              </Button>
+
+              {/* View lab reports */}
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={<FileText size={18} />}
+                onClick={() => setShowReportsModal(true)}
+              >
+                {t('slip.view_reports')}
+              </Button>
+
+              {/* Show nearest washroom / wheelchair point */}
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={<Accessibility size={18} />}
+                onClick={() => setShowAmenitiesModal(true)}
+              >
+                {t('slip.nearest_amenities')}
+              </Button>
+            </div>
+
+            {/* 8. SAVE SLIP ACTIONS (Download as image, Share, Print/Save PDF) */}
+            <div className="p-4 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col gap-3 shadow-xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Save & Share Slip
               </span>
 
-              {/* TTS Speaker Button */}
-              <button
-                type="button"
-                onClick={handleSpeakDirections}
-                className={[
-                  'btn btn-sm px-3 rounded-full flex items-center gap-1.5 transition-all',
-                  isSpeaking
-                    ? 'btn-primary animate-pulse'
-                    : 'btn-secondary bg-white text-[var(--color-primary-600)] border border-[var(--color-primary-400)]',
-                ].join(' ')}
-                aria-label={isSpeaking ? t('slip.stop_listening') : t('slip.listen_directions')}
-                title={isSpeaking ? t('slip.stop_listening') : t('slip.listen_directions')}
-              >
-                {isSpeaking ? (
-                  <>
-                    <VolumeX size={16} />
-                    <span className="text-xs font-bold">{t('slip.stop_listening')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Volume2 size={16} />
-                    <span className="text-xs font-bold">{t('slip.listen_directions')}</span>
-                  </>
-                )}
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Download size={16} />}
+                  onClick={handleDownloadImage}
+                  className="border border-[var(--color-border)]"
+                >
+                  {t('slip.download_image')}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Share2 size={16} />}
+                  onClick={handleShare}
+                  className="border border-[var(--color-border)]"
+                >
+                  {t('slip.share_slip')}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<Printer size={16} />}
+                  onClick={handlePrint}
+                  className="border border-[var(--color-border)]"
+                >
+                  {t('slip.print_slip')}
+                </Button>
+              </div>
             </div>
-
-            <p className="text-base font-bold text-[var(--color-primary-950)] leading-relaxed break-words">
-              "{slip.humanReadableDirection || 'Follow the hospital main corridor to the department counter.'}"
-            </p>
-          </div>
-
-          {/* Save slip status indicator */}
-          {!isGuestUser ? (
-            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs sm:text-sm font-semibold">
-              <CheckCircle size={18} className="text-emerald-600 shrink-0" />
-              <span>{t('slip.auto_saved_notice')}</span>
-              <Link to="/patient/history" className="ml-auto underline font-bold text-xs sm:text-sm shrink-0">
-                {t('slip.view_history_btn')} →
-              </Link>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between gap-2 p-3 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs font-medium flex-wrap">
-              <span>{t('history.guest_desc')}</span>
-              <Link to="/patient/start" className="underline font-bold text-xs shrink-0 text-amber-950">
-                {t('history.guest_login_btn')}
-              </Link>
-            </div>
-          )}
-        </article>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            6. PRIMARY BUTTON: "Help me find the way"
-            (Opens guidance screen on request only — do NOT auto-open map)
-            ══════════════════════════════════════════════════════════════════ */}
-        <div className="pt-2">
-          <Button
-            variant="primary"
-            size="lg"
-            fullWidth
-            icon={<Navigation size={22} />}
-            onClick={() =>
-              navigate(`/patient/guidance/${slip.id}`, {
-                state: { departmentId: slip.department.id, slip },
-              })
-            }
-          >
-            {t('slip.help_find_way')}
-          </Button>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            7. SECONDARY BUTTONS (Stacked cleanly without horizontal squeeze)
-            ══════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col gap-2.5 pt-1">
-          {/* I need urgent attention */}
-          <Button
-            variant="danger"
-            fullWidth
-            icon={<AlertTriangle size={18} />}
-            onClick={() => navigate('/patient/emergency')}
-          >
-            {t('slip.urgent_attention')}
-          </Button>
-
-          {/* View lab reports */}
-          <Button
-            variant="secondary"
-            fullWidth
-            icon={<FileText size={18} />}
-            onClick={() => setShowReportsModal(true)}
-          >
-            {t('slip.view_reports')}
-          </Button>
-
-          {/* Show nearest washroom / wheelchair point */}
-          <Button
-            variant="secondary"
-            fullWidth
-            icon={<Accessibility size={18} />}
-            onClick={() => setShowAmenitiesModal(true)}
-          >
-            {t('slip.nearest_amenities')}
-          </Button>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════════════════
-            8. SAVE SLIP ACTIONS (Download as image, Share, Print/Save PDF)
-            ══════════════════════════════════════════════════════════════════ */}
-        <div className="p-4 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col gap-3 shadow-xs">
-          <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-            Save & Share Slip
-          </span>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Download size={16} />}
-              onClick={handleDownloadImage}
-              className="border border-[var(--color-border)]"
-            >
-              {t('slip.download_image')}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Share2 size={16} />}
-              onClick={handleShare}
-              className="border border-[var(--color-border)]"
-            >
-              {t('slip.share_slip')}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<Printer size={16} />}
-              onClick={handlePrint}
-              className="border border-[var(--color-border)]"
-            >
-              {t('slip.print_slip')}
-            </Button>
           </div>
         </div>
 

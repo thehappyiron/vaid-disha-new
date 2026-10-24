@@ -1,5 +1,5 @@
 import React, { type ReactNode, type KeyboardEvent } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Check } from 'lucide-react';
 
 export interface OptionCardProps {
   /** Optional icon element (rendered inside a fixed icon container, 48px standard, 40px on <360px) */
@@ -120,6 +120,27 @@ export function OptionCard({
 
   const gridColsClass = icon ? 'grid-cols-[auto_minmax(0,1fr)]' : 'grid-cols-1';
 
+  // Determine selectable state and right accessory
+  const isCheckbox = role === 'checkbox';
+  const isRadio = role === 'radio';
+  const isSelectableRole = isCheckbox || isRadio;
+  const isChecked = ariaChecked !== undefined ? ariaChecked : selected;
+
+  const resolvedRightSlot = rightSlot ?? (isSelectableRole ? (
+    <div
+      className={[
+        'w-6 h-6 border-2 flex items-center justify-center shrink-0 transition-colors',
+        isRadio ? 'rounded-full' : 'rounded-md',
+        isChecked
+          ? 'bg-[var(--color-primary-500)] border-[var(--color-primary-500)] text-white'
+          : 'border-[var(--color-neutral-400)] bg-white',
+      ].join(' ')}
+      aria-hidden="true"
+    >
+      {isChecked && <Check size={isRadio ? 14 : 16} strokeWidth={3} />}
+    </div>
+  ) : null);
+
   return (
     <Component
       id={id}
@@ -135,7 +156,7 @@ export function OptionCard({
       onClick={disabled ? undefined : onClick}
       onKeyDown={disabled ? undefined : handleKeyDown}
       className={[
-        'w-full text-left rounded-xl border-2 p-4 grid gap-x-4 gap-y-2 items-start transition-all box-border',
+        'w-full text-left rounded-xl border-2 p-4 grid gap-x-4 gap-y-2 items-start transition-all box-border relative overflow-hidden',
         gridColsClass,
         stateClasses,
         interactiveClasses,
@@ -162,17 +183,19 @@ export function OptionCard({
 
       {/* Col 2: Title and Description in the 1fr column (takes all remaining width) */}
       <div className="min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          {typeof title === 'string' ? (
-            <p className="text-lg font-bold leading-snug">{title}</p>
-          ) : (
-            <div className="text-lg font-bold leading-snug">{title}</div>
-          )}
+        <div className="flex items-start justify-between gap-3 w-full">
+          <div className="min-w-0 flex-1 pr-2">
+            {typeof title === 'string' ? (
+              <p className="text-lg font-bold leading-snug break-words">{title}</p>
+            ) : (
+              <div className="text-lg font-bold leading-snug break-words">{title}</div>
+            )}
+          </div>
 
-          {/* Optional chevron (24px wide, shrink-0) or right accessory */}
-          {(chevron || rightSlot) && (
-            <div className="shrink-0 flex items-center gap-1.5 self-center">
-              {rightSlot}
+          {/* Top-right accessory slot (checkbox, radio, speaker button, or chevron) */}
+          {(chevron || resolvedRightSlot) && (
+            <div className="shrink-0 flex items-center gap-2 self-start pt-0.5">
+              {resolvedRightSlot}
               {chevron && (
                 typeof chevron === 'boolean' ? (
                   <span className="shrink-0 w-6 h-6 flex items-center justify-center text-[var(--color-text-muted)]" aria-hidden="true">

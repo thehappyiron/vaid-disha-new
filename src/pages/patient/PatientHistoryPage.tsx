@@ -148,7 +148,7 @@ export function PatientHistoryPage() {
                 <h3 className="section-label">
                   {isGuest ? t('history.current_session_slips') : t('history.active_slips', { defaultValue: 'Recent Visit Slips' })}
                 </h3>
-                <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {slips.map((slip) => {
                     const statusVariant =
                       slip.status === 'in_progress' ? 'success' : slip.status === 'turn_soon' ? 'info' : 'warning';
@@ -205,7 +205,7 @@ export function PatientHistoryPage() {
                     <p>{t('history.no_records')}</p>
                   </Card>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {pastVisits.map((visit) => (
                       <OptionCard
                         key={visit.id}

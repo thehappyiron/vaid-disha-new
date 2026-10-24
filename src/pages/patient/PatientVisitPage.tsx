@@ -358,7 +358,7 @@ export function PatientVisitPage() {
             STEP 1: Basic Details (Name, Age, Gender)
             ══════════════════════════════════════════════════════════════════ */}
         {currentStep === 1 && (
-          <section aria-labelledby="step1-heading" className="flex flex-col gap-5 min-w-0">
+          <section aria-labelledby="step1-heading" className="w-full max-w-2xl mx-auto flex flex-col gap-5 min-w-0">
             <div>
               <h1
                 id="step1-heading"
@@ -472,7 +472,7 @@ export function PatientVisitPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0" role="group">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0" role="group">
               {[
                 {
                   id: 'wheelchair' as const,
@@ -563,7 +563,7 @@ export function PatientVisitPage() {
             {/* Pinned Emergency Card */}
             <EmergencyCard to="/patient/emergency" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0" role="radiogroup">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0" role="radiogroup">
               {[
                 {
                   id: 'consultation' as const,
@@ -782,9 +782,9 @@ export function PatientVisitPage() {
             </div>
 
             {/* Department Card List */}
-            <div className="flex flex-col gap-3 min-w-0" role="radiogroup">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0" role="radiogroup">
               {filteredDepartments.length === 0 ? (
-                <div className="card p-6 text-center text-sm text-[var(--color-text-muted)]">
+                <div className="col-span-full card p-6 text-center text-sm text-[var(--color-text-muted)]">
                   {t('patient_visit.no_dept_found')}
                 </div>
               ) : (
@@ -841,7 +841,7 @@ export function PatientVisitPage() {
             STEP 5: Review & Generate Slip Screen
             ══════════════════════════════════════════════════════════════════ */}
         {currentStep === 5 && (
-          <section aria-labelledby="step5-heading" className="flex flex-col gap-4 min-w-0">
+          <section aria-labelledby="step5-heading" className="w-full max-w-2xl mx-auto flex flex-col gap-4 min-w-0">
             <div>
               <h1
                 id="step5-heading"
@@ -1008,7 +1008,7 @@ export function PatientVisitPage() {
         {/* ══════════════════════════════════════════════════════════════════
             BIG NEXT / BACK / GENERATE ACTIONS (Fixed or Sticky bottom bar)
             ══════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-[var(--color-border)] mt-2 min-w-0">
+        <div className={`flex flex-col sm:flex-row gap-3 pt-3 border-t border-[var(--color-border)] mt-2 min-w-0 w-full ${currentStep === 1 || currentStep === 5 ? 'max-w-2xl mx-auto' : ''}`}>
           <Button
             type="button"
             variant="ghost"

@@ -622,7 +622,7 @@
 
 
   /* ── Section / Page layout ──────────────────────────────── */
-  /* Fluid single-column container with max-w-md (28rem) and px-4 (1rem) */
+  /* Fluid responsive container: max-w-md on mobile, max-w-3xl at md, max-w-5xl at lg */
   .page-container {
     flex:             1;
     max-width:        28rem;
@@ -634,6 +634,31 @@
     flex-direction:   column;
     gap:              1.25rem;
     overflow-x:       hidden;
+  }
+
+  @media (min-width: 768px) {
+    .page-container {
+      max-width:      48rem;  /* max-w-3xl */
+      padding-left:   1.5rem;
+      padding-right:  1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .page-container {
+      max-width:      64rem;  /* max-w-5xl */
+      padding-left:   2rem;
+      padding-right:  2rem;
+    }
+  }
+
+  /* Staff pages full width on desktop (max-w-7xl) */
+  @media (min-width: 768px) {
+    .page-container.staff-container {
+      max-width:      80rem;  /* max-w-7xl */
+      padding-left:   2rem;
+      padding-right:  2rem;
+    }
   }
 
   .section-label {

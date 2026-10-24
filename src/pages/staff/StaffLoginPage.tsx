@@ -41,14 +41,15 @@ export function StaffLoginPage() {
   };
 
   return (
-    <BaseLayout showHome={true} headerTitle={t('app.name')}>
-      <div className="page-container">
-        <PageHeader
-          title={t('staff_login.page_title')}
-          subtitle={t('staff_login.page_subtitle')}
-          showBack={true}
-          onBack={() => navigate('/')}
-        />
+    <BaseLayout showHome={true} headerTitle={t('app.name')} isStaff={true}>
+      <div className="page-container staff-container">
+        <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
+          <PageHeader
+            title={t('staff_login.page_title')}
+            subtitle={t('staff_login.page_subtitle')}
+            showBack={true}
+            onBack={() => navigate('/')}
+          />
 
         {/* Demo Hint Banner */}
         <div className="p-3.5 bg-blue-50 border-2 border-blue-200 rounded-xl flex items-start gap-3 shadow-sm">
@@ -109,6 +110,7 @@ export function StaffLoginPage() {
         {/* Security Notice */}
         <div className="text-center pt-3 text-xs text-[var(--color-text-muted)]">
           <p>City General Hospital EHR System • HIPAA & NDHM Compliant</p>
+        </div>
         </div>
       </div>
     </BaseLayout>

@@ -87,7 +87,7 @@ export function RoleSelectionPage() {
           </div>
 
           {/* Large Language Cards */}
-          <div className="flex flex-col gap-3 my-2" role="group" aria-label={t('language_select.title')}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 my-2" role="group" aria-label={t('language_select.title')}>
             {LANGUAGES.map((lang) => {
               const isSelected = currentLang === lang.code;
               const isSpeaking = speakingCode === lang.code;
@@ -199,7 +199,7 @@ export function RoleSelectionPage() {
         </div>
 
         {/* Exactly 3 Equal-Sized Role Buttons */}
-        <div className="flex flex-col gap-4 my-1" role="group" aria-label={t('roles.select_role_title')}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-2" role="group" aria-label={t('roles.select_role_title')}>
           {/* 1. Patient Role (Most prominent) */}
           <OptionCard
             highlighted

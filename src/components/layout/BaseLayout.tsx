@@ -6,6 +6,7 @@ interface BaseLayoutProps {
   children: ReactNode;
   showHome?: boolean;
   headerTitle?: string;
+  isStaff?: boolean;
 }
 
 /**
@@ -17,7 +18,7 @@ interface BaseLayoutProps {
  * - <main> landmark with id="main-content"
  * - Correct role structure for screen readers
  */
-export function BaseLayout({ children, showHome = true, headerTitle }: BaseLayoutProps) {
+export function BaseLayout({ children, showHome = true, headerTitle, isStaff = false }: BaseLayoutProps) {
   const { t } = useTranslation();
 
   return (
@@ -27,7 +28,7 @@ export function BaseLayout({ children, showHome = true, headerTitle }: BaseLayou
         {t('a11y.skip_to_content')}
       </a>
 
-      <AppHeader showHome={showHome} title={headerTitle} />
+      <AppHeader showHome={showHome} title={headerTitle} isStaff={isStaff} />
 
       <main
         id="main-content"

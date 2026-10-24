@@ -49,7 +49,7 @@ export function EmergencyPage() {
         </div>
 
         {/* Key Emergency Details Cards */}
-        <div className="grid grid-cols-1 gap-3.5 mt-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-1">
           <OptionCard
             as="div"
             icon={<MapPin size={24} aria-hidden="true" />}

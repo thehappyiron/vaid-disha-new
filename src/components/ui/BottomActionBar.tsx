@@ -17,7 +17,7 @@ export function BottomActionBar({ children, className = '' }: BottomActionBarPro
       aria-label="Page actions"
       className={`bottom-action-bar ${className}`}
     >
-      <div className="max-w-md mx-auto w-full flex gap-3 items-center">
+      <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto w-full flex gap-3 items-center">
         {children}
       </div>
     </div>

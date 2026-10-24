@@ -75,7 +75,7 @@ export function DepartmentPage() {
         ) : error ? (
           <ErrorMessage onRetry={loadDepartments} />
         ) : (
-          <ul role="list" className="flex flex-col gap-3 min-w-0">
+          <ul role="list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0">
             {departments.map((dept) => {
               const isGenerating = generatingSlip === dept.id;
               return (

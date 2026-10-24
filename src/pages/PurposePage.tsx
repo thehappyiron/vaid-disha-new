@@ -148,10 +148,10 @@ export function PurposePage() {
               id="purpose-list"
               role="list"
               aria-label={t('purpose.page_title')}
-              className="flex flex-col gap-3 min-w-0"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0"
             >
               {standardPurposes.length === 0 ? (
-                <li className="card text-center py-8 text-[var(--color-text-muted)] min-w-0">
+                <li className="col-span-full card text-center py-8 text-[var(--color-text-muted)] min-w-0">
                   {t('purpose.not_found')}
                 </li>
               ) : (

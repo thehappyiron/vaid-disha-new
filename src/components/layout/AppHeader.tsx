@@ -8,6 +8,7 @@ import { AccessibilityPanel } from './AccessibilityPanel';
 interface AppHeaderProps {
   showHome?: boolean;
   title?: string;
+  isStaff?: boolean;
 }
 
 /**
@@ -17,17 +18,21 @@ interface AppHeaderProps {
  * - Accessibility settings button (opens bottom sheet panel)
  * - Optional home link
  */
-export function AppHeader({ showHome = false, title }: AppHeaderProps) {
+export function AppHeader({ showHome = false, title, isStaff = false }: AppHeaderProps) {
   const { t } = useTranslation();
   const [panelOpen, setPanelOpen] = useState(false);
+
+  const containerClasses = isStaff
+    ? 'max-w-md md:max-w-7xl mx-auto px-4 md:px-8 py-2 flex items-center gap-1.5 sm:gap-2'
+    : 'max-w-md md:max-w-3xl lg:max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-2 flex items-center gap-1.5 sm:gap-2';
 
   return (
     <>
       <header
         role="banner"
-        className="sticky top-0 z-30 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]"
+        className="sticky top-0 z-30 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)] w-full"
       >
-        <div className="max-w-md mx-auto px-4 py-2 flex items-center gap-1.5 sm:gap-2">
+        <div className={containerClasses}>
           {/* Home link */}
           {showHome && (
             <Link

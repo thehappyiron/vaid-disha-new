@@ -359,7 +359,7 @@ export function PatientGuidancePage() {
                             </h3>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                             {group.landmarks.map((landmark) => (
                               <OptionCard
                                 key={landmark.id}
@@ -503,8 +503,8 @@ export function PatientGuidancePage() {
                 </div>
               </div>
 
-              {/* View Mode Toggle: Card View vs 2D Map */}
-              <div className="flex items-center gap-1.5 p-1 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)]">
+              {/* View Mode Toggle: Card View vs 2D Map (Mobile only) */}
+              <div className="flex md:hidden items-center gap-1.5 p-1 bg-[var(--color-surface-2)] rounded-xl border border-[var(--color-border)]">
                 <button
                   type="button"
                   onClick={() => setViewMode('card')}
@@ -589,188 +589,188 @@ export function PatientGuidancePage() {
                 </div>
               </Card>
             ) : (
-              <>
-                {/* ── CARD VIEW: STEP-BY-STEP GUIDANCE ──────────────────────── */}
-                {viewMode === 'card' && currentStep && (
-                  <div className="flex flex-col gap-4">
-                    {/* Step progress & voice toggle */}
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">
-                        {t('guidance.step_counter', {
-                          current: activeStepIndex + 1,
-                          total: routeResult.steps.length,
-                        })}
-                      </span>
-
-                      {/* Auto voice guidance toggle */}
-                      <button
-                        type="button"
-                        onClick={() => setAutoVoice(!autoVoice)}
-                        className={[
-                          'btn btn-sm px-3 rounded-full flex items-center gap-1.5 transition-all',
-                          autoVoice
-                            ? 'btn-secondary bg-emerald-50 text-emerald-900 border-emerald-300'
-                            : 'btn-ghost text-slate-500',
-                        ].join(' ')}
-                      >
-                        <Volume2 size={16} />
-                        <span className="text-xs font-bold">
-                          {autoVoice ? t('guidance.auto_voice_on') : t('guidance.auto_voice_off')}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start w-full">
+                {/* ── COLUMN 1 (Left on desktop): STEP-BY-STEP GUIDANCE CARDS ──────────────── */}
+                <div className={`${viewMode === 'map' ? 'hidden md:flex' : 'flex'} flex-col gap-4 min-w-0`}>
+                  {currentStep && (
+                    <>
+                      {/* Step progress & voice toggle */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">
+                          {t('guidance.step_counter', {
+                            current: activeStepIndex + 1,
+                            total: routeResult.steps.length,
+                          })}
                         </span>
-                      </button>
-                    </div>
 
-                    {/* Step Progress Bar */}
-                    <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-[var(--color-primary-500)] h-full transition-all duration-300"
-                        style={{
-                          width: `${((activeStepIndex + 1) / routeResult.steps.length) * 100}%`,
-                        }}
-                      />
-                    </div>
+                        {/* Auto voice guidance toggle */}
+                        <button
+                          type="button"
+                          onClick={() => setAutoVoice(!autoVoice)}
+                          className={[
+                            'btn btn-sm px-3 rounded-full flex items-center gap-1.5 transition-all',
+                            autoVoice
+                              ? 'btn-secondary bg-emerald-50 text-emerald-900 border-emerald-300'
+                              : 'btn-ghost text-slate-500',
+                          ].join(' ')}
+                        >
+                          <Volume2 size={16} />
+                          <span className="text-xs font-bold">
+                            {autoVoice ? t('guidance.auto_voice_on') : t('guidance.auto_voice_off')}
+                          </span>
+                        </button>
+                      </div>
 
-                    {/* MAIN INSTRUCTION CARD (Large text, Large icon, Clear speech) */}
-                    <div ref={stepCardRef} tabIndex={-1} className="outline-none">
-                      <Card className="p-6 sm:p-8 border-3 border-[var(--color-primary-500)] bg-[var(--color-surface)] shadow-md flex flex-col gap-5 rounded-3xl">
-                        <div className="flex items-start justify-between gap-4">
-                          {/* Direction Icon Box */}
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[var(--color-primary-50)] text-[var(--color-primary-600)] flex items-center justify-center shrink-0 shadow-inner">
-                            {currentStep.icon === 'arrow-left' && <ArrowLeft size={38} />}
-                            {currentStep.icon === 'arrow-right' && <ArrowRight size={38} />}
-                            {currentStep.icon === 'arrow-up' && <ArrowUp size={38} />}
-                            {currentStep.icon === 'elevator' && <Building2 size={38} />}
-                            {currentStep.icon === 'stairs' && <Layers size={38} />}
-                            {currentStep.icon === 'map-pin' && <MapPin size={38} />}
+                      {/* Step Progress Bar */}
+                      <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[var(--color-primary-500)] h-full transition-all duration-300"
+                          style={{
+                            width: `${((activeStepIndex + 1) / routeResult.steps.length) * 100}%`,
+                          }}
+                        />
+                      </div>
+
+                      {/* MAIN INSTRUCTION CARD (Large text, Large icon, Clear speech) */}
+                      <div ref={stepCardRef} tabIndex={-1} className="outline-none">
+                        <Card className="p-6 sm:p-8 border-3 border-[var(--color-primary-500)] bg-[var(--color-surface)] shadow-md flex flex-col gap-5 rounded-3xl">
+                          <div className="flex items-start justify-between gap-4">
+                            {/* Direction Icon Box */}
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[var(--color-primary-50)] text-[var(--color-primary-600)] flex items-center justify-center shrink-0 shadow-inner">
+                              {currentStep.icon === 'arrow-left' && <ArrowLeft size={38} />}
+                              {currentStep.icon === 'arrow-right' && <ArrowRight size={38} />}
+                              {currentStep.icon === 'arrow-up' && <ArrowUp size={38} />}
+                              {currentStep.icon === 'elevator' && <Building2 size={38} />}
+                              {currentStep.icon === 'stairs' && <Layers size={38} />}
+                              {currentStep.icon === 'map-pin' && <MapPin size={38} />}
+                            </div>
+
+                            {/* Read aloud button for this step */}
+                            <button
+                              type="button"
+                              onClick={handleToggleAudio}
+                              className={[
+                                'btn btn-sm px-3 rounded-full flex items-center gap-1.5 transition-all',
+                                isSpeaking
+                                  ? 'btn-primary animate-pulse'
+                                  : 'btn-secondary bg-white text-[var(--color-primary-600)] border border-[var(--color-primary-400)]',
+                              ].join(' ')}
+                              aria-label={isSpeaking ? t('guidance.stop_audio') : t('guidance.read_aloud')}
+                            >
+                              {isSpeaking ? (
+                                <>
+                                  <VolumeX size={16} />
+                                  <span className="text-xs font-bold">{t('guidance.stop_audio')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 size={16} />
+                                  <span className="text-xs font-bold">{t('guidance.read_aloud')}</span>
+                                </>
+                              )}
+                            </button>
                           </div>
 
-                          {/* Read aloud button for this step */}
-                          <button
-                            type="button"
-                            onClick={handleToggleAudio}
-                            className={[
-                              'btn btn-sm px-3 rounded-full flex items-center gap-1.5 transition-all',
-                              isSpeaking
-                                ? 'btn-primary animate-pulse'
-                                : 'btn-secondary bg-white text-[var(--color-primary-600)] border border-[var(--color-primary-400)]',
-                            ].join(' ')}
-                            aria-label={isSpeaking ? t('guidance.stop_audio') : t('guidance.read_aloud')}
-                          >
-                            {isSpeaking ? (
-                              <>
-                                <VolumeX size={16} />
-                                <span className="text-xs font-bold">{t('guidance.stop_audio')}</span>
-                              </>
-                            ) : (
-                              <>
-                                <Volume2 size={16} />
-                                <span className="text-xs font-bold">{t('guidance.read_aloud')}</span>
-                              </>
+                          {/* Instruction text with i18n params */}
+                          <div>
+                            <h3 className="text-2xl sm:text-3xl font-black text-[var(--color-text)] leading-snug break-words">
+                              {getStepInstructionText(currentStep)}
+                            </h3>
+
+                            {currentStep.params.distance && (
+                              <span className="inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
+                                Distance: ~{currentStep.params.distance} metres
+                              </span>
                             )}
-                          </button>
-                        </div>
+                          </div>
 
-                        {/* Instruction text with i18n params */}
-                        <div>
-                          <h3 className="text-2xl sm:text-3xl font-black text-[var(--color-text)] leading-snug break-words">
-                            {getStepInstructionText(currentStep)}
-                          </h3>
-
-                          {currentStep.params.distance && (
-                            <span className="inline-block mt-3 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
-                              Distance: ~{currentStep.params.distance} metres
+                          {/* Floor Indicator */}
+                          <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-text-muted)] font-bold">
+                            <span>
+                              Current Location: <strong>Floor {currentStep.floor}</strong>
                             </span>
-                          )}
-                        </div>
-
-                        {/* Floor Indicator */}
-                        <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between text-xs text-[var(--color-text-muted)] font-bold">
-                          <span>
-                            Current Location: <strong>Floor {currentStep.floor}</strong>
-                          </span>
-                          <span>
-                            Target: <strong>Floor {destinationNode?.floor}</strong>
-                          </span>
-                        </div>
-                      </Card>
-                    </div>
-
-                    {/* Step Action Buttons */}
-                    <div className="grid grid-cols-2 gap-3 pt-1">
-                      <Button
-                        variant="secondary"
-                        size="lg"
-                        icon={<ArrowLeft size={20} />}
-                        onClick={handlePrevStep}
-                        disabled={activeStepIndex === 0}
-                      >
-                        {t('guidance.prev_step')}
-                      </Button>
-
-                      <Button
-                        variant="primary"
-                        size="lg"
-                        icon={<ArrowRight size={20} />}
-                        onClick={handleNextStep}
-                      >
-                        {activeStepIndex === routeResult.steps.length - 1
-                          ? t('guidance.finish_step')
-                          : t('guidance.next_step')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* ── MAP VIEW: 2D FLOOR PLAN SVG ────────────────────────────── */}
-                {viewMode === 'map' && (
-                  <div className="flex flex-col gap-4">
-                    <HospitalFloorMap
-                      currentFloor={selectedMapFloor}
-                      onSelectFloor={(fl) => setSelectedMapFloor(fl)}
-                      startNode={startNode}
-                      destinationNode={destinationNode}
-                      activeNode={activeNodeOnFloor}
-                      pathNodes={routeResult.nodes}
-                      pathEdges={routeResult.edges}
-                    />
-
-                    {/* Floating Step bar under map */}
-                    {currentStep && (
-                      <div className="p-4 bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl shadow-sm flex items-center justify-between gap-3 flex-wrap">
-                        <div className="flex-1">
-                          <span className="text-xs font-bold text-[var(--color-text-muted)] block">
-                            {t('guidance.step_counter', {
-                              current: activeStepIndex + 1,
-                              total: routeResult.steps.length,
-                            })}
-                          </span>
-                          <p className="font-extrabold text-sm sm:text-base text-[var(--color-text)] leading-snug">
-                            {getStepInstructionText(currentStep)}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={handlePrevStep}
-                            disabled={activeStepIndex === 0}
-                          >
-                            ←
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={handleNextStep}
-                          >
-                            {activeStepIndex === routeResult.steps.length - 1 ? 'Arrived ✓' : 'Next →'}
-                          </Button>
-                        </div>
+                            <span>
+                              Target: <strong>Floor {destinationNode?.floor}</strong>
+                            </span>
+                          </div>
+                        </Card>
                       </div>
-                    )}
-                  </div>
-                )}
-              </>
+
+                      {/* Step Action Buttons */}
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <Button
+                          variant="secondary"
+                          size="lg"
+                          icon={<ArrowLeft size={20} />}
+                          onClick={handlePrevStep}
+                          disabled={activeStepIndex === 0}
+                        >
+                          {t('guidance.prev_step')}
+                        </Button>
+
+                        <Button
+                          variant="primary"
+                          size="lg"
+                          icon={<ArrowRight size={20} />}
+                          onClick={handleNextStep}
+                        >
+                          {activeStepIndex === routeResult.steps.length - 1
+                            ? t('guidance.finish_step')
+                            : t('guidance.next_step')}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* ── COLUMN 2 (Right on desktop): 2D FLOOR PLAN SVG MAP ────────────────────── */}
+                <div className={`${viewMode === 'card' ? 'hidden md:flex' : 'flex'} flex-col gap-4 min-w-0 md:sticky md:top-20`}>
+                  <HospitalFloorMap
+                    currentFloor={selectedMapFloor}
+                    onSelectFloor={(fl) => setSelectedMapFloor(fl)}
+                    startNode={startNode}
+                    destinationNode={destinationNode}
+                    activeNode={activeNodeOnFloor}
+                    pathNodes={routeResult.nodes}
+                    pathEdges={routeResult.edges}
+                  />
+
+                  {/* Floating Step bar under map (mobile only) */}
+                  {currentStep && (
+                    <div className="md:hidden p-4 bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl shadow-sm flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex-1">
+                        <span className="text-xs font-bold text-[var(--color-text-muted)] block">
+                          {t('guidance.step_counter', {
+                            current: activeStepIndex + 1,
+                            total: routeResult.steps.length,
+                          })}
+                        </span>
+                        <p className="font-extrabold text-sm sm:text-base text-[var(--color-text)] leading-snug">
+                          {getStepInstructionText(currentStep)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handlePrevStep}
+                          disabled={activeStepIndex === 0}
+                        >
+                          ←
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleNextStep}
+                        >
+                          {activeStepIndex === routeResult.steps.length - 1 ? 'Arrived ✓' : 'Next →'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
 
             {/* ═════════════════════════════════════════════════════════════════

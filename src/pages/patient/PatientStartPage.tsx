@@ -76,13 +76,14 @@ export function PatientStartPage() {
   return (
     <BaseLayout showHome={true} headerTitle={t('app.name')}>
       <div className="page-container">
-        {/* Page Header */}
-        <PageHeader
-          title={t('patient_entry.page_title')}
-          subtitle={t('patient_entry.page_subtitle')}
-          showBack={true}
-          onBack={() => navigate('/')}
-        />
+        <div className="w-full max-w-2xl mx-auto flex flex-col gap-4">
+          {/* Page Header */}
+          <PageHeader
+            title={t('patient_entry.page_title')}
+            subtitle={t('patient_entry.page_subtitle')}
+            showBack={true}
+            onBack={() => navigate('/')}
+          />
 
         {/* Value Proposition Banner (one short sentence explaining benefit of login) */}
         <OptionCard
@@ -224,6 +225,7 @@ export function PatientStartPage() {
             </div>
           }
         />
+        </div>
       </div>
     </BaseLayout>
   );
