@@ -96,8 +96,31 @@ export function PatientGuidancePage() {
     fetchSlip();
   }, [slip, slipId]);
 
-  // Set destination node once slip or department is known
+  // Set destination and start node from location state or URL params or slip
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const destParam = params.get('dest') || (location.state as { destinationNodeId?: string })?.destinationNodeId;
+    const startParam = params.get('start') || (location.state as { startNodeId?: string })?.startNodeId;
+
+    if (startParam) {
+      const sNode = getNodeById(startParam);
+      if (sNode) setStartNode(sNode);
+    } else {
+      const storedLast = localStorage.getItem('vd-last-location');
+      if (storedLast) {
+        const sNode = getNodeById(storedLast);
+        if (sNode) setStartNode(sNode);
+      }
+    }
+
+    if (destParam) {
+      const dNode = getNodeById(destParam);
+      if (dNode) {
+        setDestinationNode(dNode);
+        return;
+      }
+    }
+
     if (slip) {
       let dest = findNodeByDepartmentId(slip.department.id);
       if (!dest && slip.roomNumber) {
@@ -113,7 +136,7 @@ export function PatientGuidancePage() {
       const defaultDest = getNodeById('opd-cardiology')!;
       setDestinationNode(defaultDest);
     }
-  }, [slip]);
+  }, [slip, location.search, location.state]);
 
   // Compute route when startNode or destinationNode changes
   useEffect(() => {
@@ -136,6 +159,16 @@ export function PatientGuidancePage() {
     const directionWord = params.direction
       ? t(`guidance.direction_${params.direction}`, params.direction)
       : '';
+
+    if (templateKey === 'guidance.step_arrive') {
+      const roomVal = params.room;
+      if (!roomVal || roomVal === 'Counter' || roomVal === 'undefined') {
+        return t('guidance.step_arrive_simple', {
+          defaultValue: `You have reached ${params.landmark}.`,
+          landmark: params.landmark,
+        });
+      }
+    }
 
     return t(templateKey, {
       ...params,
@@ -498,7 +531,7 @@ export function PatientGuidancePage() {
                     Starting from: <strong className="text-[var(--color-text)]">{startNode.name}</strong>
                   </span>
                   <span className="text-xs font-bold text-[var(--color-text-muted)] block">
-                    Destination: <strong className="text-[var(--color-primary-600)]">{destinationNode?.name}</strong> (Room {destinationNode?.roomNumber})
+                    Destination: <strong className="text-[var(--color-primary-600)]">{destinationNode?.name}</strong>{destinationNode?.roomNumber ? ` (Room ${destinationNode.roomNumber})` : ''}
                   </span>
                 </div>
               </div>
@@ -776,13 +809,14 @@ export function PatientGuidancePage() {
             {/* ═════════════════════════════════════════════════════════════════
                 PERSISTENT ACTIONS: "I'm lost again" & "Ask staff for help"
                 ═════════════════════════════════════════════════════════════════ */}
-            <div className="flex flex-col gap-2.5 pt-3">
+            <div className="flex flex-col gap-2.5 pt-3 w-full">
               {/* I'm lost again / Update my location */}
               <Button
                 variant="secondary"
                 fullWidth
                 icon={<RotateCcw size={18} />}
                 onClick={handleUpdateLocation}
+                className="flex items-center justify-center gap-2 text-center whitespace-normal break-words min-h-14 px-4 py-3 w-full text-sm sm:text-base font-bold"
               >
                 {t('guidance.lost_again')}
               </Button>
@@ -793,7 +827,7 @@ export function PatientGuidancePage() {
                 fullWidth
                 icon={<HelpCircle size={18} />}
                 onClick={() => setShowStaffModal(true)}
-                className="border border-[var(--color-border)] bg-[var(--color-surface)]"
+                className="flex items-center justify-center gap-2 text-center whitespace-normal break-words min-h-14 px-4 py-3 w-full border border-[var(--color-border)] bg-[var(--color-surface)] text-sm sm:text-base font-bold"
               >
                 {t('guidance.ask_staff')}
               </Button>
@@ -840,7 +874,7 @@ export function PatientGuidancePage() {
                     {destinationNode?.name}
                   </span>
                   <span className="text-base font-extrabold text-slate-800 block">
-                    Room {destinationNode?.roomNumber} • Floor {destinationNode?.floor}
+                    {destinationNode?.roomNumber ? `Room ${destinationNode.roomNumber} • ` : ''}Floor {destinationNode?.floor}
                   </span>
                 </div>
 
@@ -848,13 +882,13 @@ export function PatientGuidancePage() {
                 <div className="flex flex-col gap-2 pt-1">
                   <p className="text-base font-bold text-slate-900 leading-snug">
                     🇮🇳 {t('guidance.staff_modal_bilingual_hi', {
-                      room: destinationNode?.roomNumber || 'कमरा',
+                      room: destinationNode?.roomNumber ? `कमरा ${destinationNode.roomNumber}` : 'विभाग',
                       dept: destinationNode?.name || 'विभाग',
                     })}
                   </p>
                   <p className="text-base font-bold text-slate-900 leading-snug">
                     🚩 {t('guidance.staff_modal_bilingual_mr', {
-                      room: destinationNode?.roomNumber || 'खोली क्र.',
+                      room: destinationNode?.roomNumber ? `खोली क्र. ${destinationNode.roomNumber}` : 'विभाग',
                       dept: destinationNode?.name || 'विभाग',
                     })}
                   </p>

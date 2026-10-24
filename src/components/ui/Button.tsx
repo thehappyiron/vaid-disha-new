@@ -45,7 +45,8 @@ export function Button({
     'btn',
     VARIANT_CLASS[variant],
     SIZE_CLASS[size],
-    fullWidth ? 'btn-full' : '',
+    !iconOnly ? 'whitespace-normal break-words text-center min-h-14 px-4 py-3' : '',
+    fullWidth ? 'btn-full w-full' : '',
     iconOnly ? 'btn-icon' : '',
     className,
   ]

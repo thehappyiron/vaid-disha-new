@@ -13,8 +13,10 @@ import {
   PatientLivePage,
   PatientNotificationsPage,
   PatientCompletionPage,
+  PatientFacilitiesPage,
+  PatientReportsPage,
 } from './pages/patient';
-import { StaffLoginPage, StaffDashboardPage } from './pages/staff';
+import { StaffLoginPage, StaffDashboardPage, StaffPatientsPage } from './pages/staff';
 import { AdminComingSoonPage } from './pages/admin';
 import { PurposePage } from './pages/PurposePage';
 import { DepartmentPage } from './pages/DepartmentPage';
@@ -38,6 +40,14 @@ export function App() {
             <Route path="/patient/emergency" element={<EmergencyPage />} />
             <Route path="/patient/visit" element={<PatientVisitPage />} />
             <Route path="/patient/history" element={<PatientHistoryPage />} />
+
+            {/* Facilities Directory & Map */}
+            <Route path="/patient/facilities" element={<PatientFacilitiesPage />} />
+            <Route path="/facilities" element={<PatientFacilitiesPage />} />
+
+            {/* Diagnostic Lab Reports */}
+            <Route path="/patient/reports" element={<PatientReportsPage />} />
+            <Route path="/reports" element={<PatientReportsPage />} />
 
             {/* Real-time Notifications list */}
             <Route path="/patient/notifications" element={<PatientNotificationsPage />} />
@@ -66,6 +76,7 @@ export function App() {
             {/* Screen D: Staff login & Staff dashboard */}
             <Route path="/staff/login" element={<StaffLoginPage />} />
             <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
+            <Route path="/staff/patients" element={<StaffPatientsPage />} />
 
             {/* Hospital Admin Coming Soon */}
             <Route path="/admin/coming-soon" element={<AdminComingSoonPage />} />

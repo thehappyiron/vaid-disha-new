@@ -6,3 +6,5 @@ export * from './PatientGuidancePage';
 export * from './PatientLivePage';
 export * from './PatientNotificationsPage';
 export * from './PatientCompletionPage';
+export * from './PatientFacilitiesPage';
+export * from './PatientReportsPage';

@@ -465,5 +465,41 @@
     "review_purpose": "Purpose of Visit",
     "review_department": "Department & Doctor",
     "review_route_hint": "Your slip will provide a live queue token and direct navigation instructions from the hospital entrance."
+  },
+  "facilities": {
+    "title": "Hospital Facilities",
+    "subtitle": "Easily locate washrooms, wheelchair stands, lifts, ramps, drinking water, and prayer rooms.",
+    "take_nearest_washroom": "Take me to nearest washroom",
+    "filter_by": "Filter by Facility Type:",
+    "filter_all": "All Facilities",
+    "filter_washrooms": "Washrooms",
+    "filter_wheelchair": "Wheelchairs",
+    "filter_lifts": "Lifts",
+    "filter_ramps": "Ramps",
+    "filter_water": "Drinking Water",
+    "filter_prayer": "Prayer Room",
+    "filter_pharmacy": "Pharmacy",
+    "interactive_map": "Floor Map & Facility Pins",
+    "take_me_here": "Guide me here",
+    "all_facilities_list": "Facility Directory"
+  },
+  "reports": {
+    "title": "My Lab Reports",
+    "subtitle": "View previous and current diagnostic tests, read summaries aloud, or download report copies.",
+    "guest_banner_title": "You are currently browsing as a Guest",
+    "guest_banner_desc": "Only reports tied to your current visit slip are displayed. Log in with your mobile number to permanently save and access your lifetime medical history.",
+    "login_to_save": "Log in to Save",
+    "back_to_list": "Back to reports list"
+  },
+  "chatbot": {
+    "title": "Vaid Disha Help",
+    "subtitle": "Hospital Navigation & Live Queue Guide",
+    "help_button": "Help",
+    "open_assistant": "Open AI Help Assistant",
+    "input_placeholder": "Type a question or tap mic…",
+    "quick_room": "Where is my room?",
+    "quick_washroom": "Nearest washroom",
+    "quick_reports": "My reports"
   }
 }
+

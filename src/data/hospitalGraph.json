@@ -131,8 +131,8 @@
       "floor": 0,
       "category": "vertical",
       "pillarCode": "F0-S1",
-      "x": 280,
-      "y": 190,
+      "x": 260,
+      "y": 195,
       "isLandmark": true
     },
     {
@@ -142,7 +142,7 @@
       "floor": 0,
       "category": "facility",
       "pillarCode": "F0-W1",
-      "x": 220,
+      "x": 190,
       "y": 250,
       "isLandmark": true
     },
@@ -175,8 +175,8 @@
       "floor": 1,
       "category": "vertical",
       "pillarCode": "F1-S1",
-      "x": 280,
-      "y": 190,
+      "x": 260,
+      "y": 195,
       "isLandmark": true
     },
     {
@@ -267,8 +267,8 @@
       "floor": 1,
       "category": "facility",
       "pillarCode": "F1-W1",
-      "x": 220,
-      "y": 180,
+      "x": 170,
+      "y": 195,
       "isLandmark": true
     },
     {
@@ -300,8 +300,8 @@
       "floor": 2,
       "category": "vertical",
       "pillarCode": "F2-S1",
-      "x": 280,
-      "y": 190,
+      "x": 260,
+      "y": 195,
       "isLandmark": true
     },
     {
@@ -391,8 +391,8 @@
       "floor": 2,
       "category": "pillar",
       "pillarCode": "F2-P7",
-      "x": 520,
-      "y": 200,
+      "x": 540,
+      "y": 165,
       "isLandmark": true
     },
     {
@@ -402,13 +402,93 @@
       "floor": 2,
       "category": "facility",
       "pillarCode": "F2-W1",
-      "x": 220,
-      "y": 180,
+      "x": 170,
+      "y": 195,
+      "isLandmark": true
+    },
+    {
+      "id": "wheelchair-f0-main",
+      "name": "Wheelchair Stand (Entrance)",
+      "nameKey": "facilities.wheelchair_stand_f0",
+      "floor": 0,
+      "category": "facility",
+      "pillarCode": "F0-WC1",
+      "x": 290,
+      "y": 460,
+      "isLandmark": true
+    },
+    {
+      "id": "ramp-f0-main",
+      "name": "Entrance Access Ramp",
+      "nameKey": "facilities.ramp_f0",
+      "floor": 0,
+      "category": "facility",
+      "pillarCode": "F0-RP1",
+      "x": 510,
+      "y": 460,
+      "isLandmark": true
+    },
+    {
+      "id": "water-f0",
+      "name": "Drinking Water (Ground)",
+      "nameKey": "facilities.water_f0",
+      "floor": 0,
+      "category": "facility",
+      "pillarCode": "F0-DW1",
+      "x": 490,
+      "y": 360,
+      "isLandmark": true
+    },
+    {
+      "id": "water-f1",
+      "name": "Drinking Water (Floor 1)",
+      "nameKey": "facilities.water_f1",
+      "floor": 1,
+      "category": "facility",
+      "pillarCode": "F1-DW1",
+      "x": 490,
+      "y": 260,
+      "isLandmark": true
+    },
+    {
+      "id": "water-f2",
+      "name": "Drinking Water (Floor 2)",
+      "nameKey": "facilities.water_f2",
+      "floor": 2,
+      "category": "facility",
+      "pillarCode": "F2-DW1",
+      "x": 490,
+      "y": 260,
+      "isLandmark": true
+    },
+    {
+      "id": "washroom-f1-acc",
+      "name": "Floor 1 Accessible Washroom",
+      "nameKey": "facilities.washroom_f1_acc",
+      "floor": 1,
+      "category": "facility",
+      "pillarCode": "F1-WA1",
+      "x": 160,
+      "y": 260,
+      "isLandmark": true
+    },
+    {
+      "id": "prayer-f1",
+      "name": "Interfaith Prayer & Quiet Room",
+      "nameKey": "facilities.prayer_f1",
+      "floor": 1,
+      "category": "facility",
+      "pillarCode": "F1-PR1",
+      "x": 670,
+      "y": 260,
       "isLandmark": true
     }
   ],
   "edges": [
     { "from": "entrance-main", "to": "reception", "distance": 18, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
+    { "from": "entrance-main", "to": "wheelchair-f0-main", "distance": 5, "type": "corridor", "direction": "left", "instruction": "turn_left" },
+    { "from": "entrance-main", "to": "ramp-f0-main", "distance": 5, "type": "corridor", "direction": "right", "instruction": "turn_right" },
+    { "from": "reception", "to": "water-f0", "distance": 6, "type": "corridor", "direction": "right", "instruction": "turn_right" },
     { "from": "reception", "to": "corridor-f0-center", "distance": 15, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
     { "from": "reception", "to": "pharmacy", "distance": 22, "type": "corridor", "direction": "left", "instruction": "turn_left" },
     { "from": "reception", "to": "emergency-dept", "distance": 25, "type": "corridor", "direction": "right", "instruction": "turn_right" },
@@ -431,17 +511,21 @@
     { "from": "lift-a-f1", "to": "waiting-f1", "distance": 10, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
     { "from": "lift-b-f1", "to": "waiting-f1", "distance": 10, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
     { "from": "stairs-a-f1", "to": "waiting-f1", "distance": 14, "type": "corridor", "direction": "right", "instruction": "turn_right" },
+    { "from": "waiting-f1", "to": "water-f1", "distance": 6, "type": "corridor", "direction": "right", "instruction": "turn_right" },
     { "from": "waiting-f1", "to": "corridor-f1-west", "distance": 16, "type": "corridor", "direction": "left", "instruction": "turn_left" },
     { "from": "waiting-f1", "to": "corridor-f1-east", "distance": 16, "type": "corridor", "direction": "right", "instruction": "turn_right" },
     { "from": "corridor-f1-west", "to": "opd-general", "distance": 15, "type": "corridor", "direction": "right", "instruction": "turn_right" },
     { "from": "corridor-f1-west", "to": "opd-derma", "distance": 15, "type": "corridor", "direction": "left", "instruction": "turn_left" },
     { "from": "corridor-f1-west", "to": "washroom-f1", "distance": 8, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
+    { "from": "corridor-f1-west", "to": "washroom-f1-acc", "distance": 6, "type": "corridor", "direction": "left", "instruction": "turn_left" },
     { "from": "corridor-f1-east", "to": "opd-eye", "distance": 15, "type": "corridor", "direction": "left", "instruction": "turn_left" },
     { "from": "corridor-f1-east", "to": "opd-pediatrics", "distance": 15, "type": "corridor", "direction": "right", "instruction": "turn_right" },
+    { "from": "corridor-f1-east", "to": "prayer-f1", "distance": 8, "type": "corridor", "direction": "right", "instruction": "turn_right" },
 
     { "from": "lift-a-f2", "to": "waiting-f2", "distance": 10, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
     { "from": "lift-b-f2", "to": "waiting-f2", "distance": 10, "type": "corridor", "direction": "straight", "instruction": "walk_straight" },
     { "from": "stairs-a-f2", "to": "waiting-f2", "distance": 14, "type": "corridor", "direction": "right", "instruction": "turn_right" },
+    { "from": "waiting-f2", "to": "water-f2", "distance": 6, "type": "corridor", "direction": "right", "instruction": "turn_right" },
     { "from": "waiting-f2", "to": "corridor-f2-west", "distance": 16, "type": "corridor", "direction": "left", "instruction": "turn_left" },
     { "from": "waiting-f2", "to": "corridor-f2-east", "distance": 16, "type": "corridor", "direction": "right", "instruction": "turn_right" },
     { "from": "corridor-f2-west", "to": "opd-ent", "distance": 15, "type": "corridor", "direction": "right", "instruction": "turn_right" },

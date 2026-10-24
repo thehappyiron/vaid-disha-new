@@ -241,7 +241,7 @@ export function DevStorePage() {
                   type="button"
                   onClick={() => setSelectedDeptId(deptId)}
                   className={[
-                    'btn btn-sm px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all',
+                    'btn btn-sm px-3.5 py-2 rounded-xl text-xs font-bold whitespace-normal break-words transition-all',
                     isSelected
                       ? 'btn-primary shadow-sm'
                       : 'btn-secondary bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text)]',
@@ -260,7 +260,7 @@ export function DevStorePage() {
             <div className="flex items-center gap-2.5">
               <Building2 size={20} className="text-[var(--color-primary-600)]" />
               <h2 className="text-lg font-black text-[var(--color-text)]">
-                {currentDept.departmentName} (Room {currentDept.roomNumber})
+                {currentDept.departmentName}{currentDept.roomNumber ? ` (Room ${currentDept.roomNumber})` : ''}
               </h2>
             </div>
             <StatusBadge

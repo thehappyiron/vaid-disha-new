@@ -1,4 +1,5 @@
 import { useRef, useEffect, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   X,
@@ -125,21 +126,24 @@ export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
     { value: 'high-contrast', label: t('a11y.theme_high_contrast'), icon: <Eye size={17} /> },
   ];
 
-  return (
+  return createPortal(
     <>
-      {/* Backdrop */}
+      {/* Backdrop z-[90] */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 backdrop-blur-xs"
+        className="fixed inset-0 bg-black/60 z-[90] backdrop-blur-xs"
         aria-hidden="true"
         onClick={onClose}
       />
 
-      {/* Panel Bottom Sheet */}
+      {/* Panel Bottom Sheet z-[100] */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--color-surface)] text-[var(--color-text)] rounded-t-2xl shadow-2xl max-h-[92dvh] overflow-y-auto max-w-2xl mx-auto border-t-2 border-[var(--color-border)]"
+        className="fixed bottom-0 left-0 right-0 z-[100] bg-[var(--color-surface)] text-[var(--color-text)] rounded-t-2xl shadow-2xl max-h-[92dvh] overflow-y-auto max-w-2xl mx-auto border-t-2 border-[var(--color-border)]"
+        style={{
+          paddingBottom: 'max(1rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-[var(--color-border)] sticky top-0 bg-[var(--color-surface)] z-10">
@@ -185,7 +189,7 @@ export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
                     ].join(' ')}
                   >
                     <span className="shrink-0">{icon}</span>
-                    <span className="truncate">{label}</span>
+                    <span className="whitespace-normal break-words text-center">{label}</span>
                   </button>
                 );
               })}
@@ -286,7 +290,7 @@ export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
                     ].join(' ')}
                   >
                     {isActive && <Check size={14} className="shrink-0 mr-1" aria-hidden="true" />}
-                    <span className="truncate">{label}</span>
+                    <span className="whitespace-normal break-words text-center">{label}</span>
                   </button>
                 );
               })}
@@ -308,6 +312,7 @@ export function AccessibilityPanel({ onClose }: AccessibilityPanelProps) {
           </section>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }

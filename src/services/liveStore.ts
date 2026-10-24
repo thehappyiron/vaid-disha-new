@@ -22,6 +22,13 @@ export interface QueueEntry {
   estimatedWaitMinutes: number;  // Specific estimated wait for this patient
   calledAt?: string;
   createdAt: string;
+  isGuest?: boolean;
+  purpose?: string;
+  accessibilityNeeds?: string[];
+  age?: number;
+  isElderly?: boolean;
+  isEmergency?: boolean;
+  scheduledTime?: string;
 }
 
 export interface DepartmentLiveStatus {
@@ -225,6 +232,10 @@ const INITIAL_QUEUE: QueueEntry[] = [
     status: 'in_progress',
     position: 0,
     estimatedWaitMinutes: 0,
+    purpose: 'Cardiology Follow-up (Hypertension)',
+    isGuest: false,
+    age: 58,
+    scheduledTime: '10:00 AM',
     calledAt: new Date(Date.now() - 5 * 60000).toISOString(),
     createdAt: new Date(Date.now() - 30 * 60000).toISOString(),
   },
@@ -237,28 +248,44 @@ const INITIAL_QUEUE: QueueEntry[] = [
     status: 'turn_soon',
     position: 1,
     estimatedWaitMinutes: 10,
+    purpose: 'Chest Tightness & Palpitations',
+    isGuest: false,
+    age: 68,
+    isElderly: true,
+    accessibilityNeeds: ['walking_difficulty'],
+    scheduledTime: '10:15 AM',
     createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
   },
   {
     id: 'q-card-3',
     token: 'CARD-1043',
-    patientName: 'Priya Joshi',
+    patientName: 'Priya Joshi (Guest)',
     departmentId: 'opd-cardio',
     roomNumber: '204',
     status: 'waiting',
     position: 2,
     estimatedWaitMinutes: 20,
+    purpose: 'ECG Screening & Chest Discomfort',
+    isGuest: true,
+    age: 34,
+    scheduledTime: '10:30 AM',
     createdAt: new Date(Date.now() - 20 * 60000).toISOString(),
   },
   {
     id: 'q-card-4',
     token: 'CARD-1044',
-    patientName: 'Amit Verma',
+    patientName: 'Amit Verma (Guest)',
     departmentId: 'opd-cardio',
     roomNumber: '204',
     status: 'waiting',
     position: 3,
     estimatedWaitMinutes: 30,
+    purpose: 'Post-surgery Valve Checkup',
+    isGuest: true,
+    age: 72,
+    isElderly: true,
+    accessibilityNeeds: ['wheelchair'],
+    scheduledTime: '10:45 AM',
     createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
   },
 
@@ -272,18 +299,26 @@ const INITIAL_QUEUE: QueueEntry[] = [
     status: 'completed',
     position: 0,
     estimatedWaitMinutes: 0,
+    purpose: 'Diabetes Management Review',
+    isGuest: false,
+    age: 62,
+    scheduledTime: '09:30 AM',
     calledAt: new Date(Date.now() - 25 * 60000).toISOString(),
     createdAt: new Date(Date.now() - 40 * 60000).toISOString(),
   },
   {
     id: 'q-opd-2',
     token: 'OPD-102',
-    patientName: 'Suresh Patel',
+    patientName: 'Suresh Patel (Guest)',
     departmentId: 'opd-general',
     roomNumber: '101',
     status: 'in_progress',
     position: 0,
     estimatedWaitMinutes: 0,
+    purpose: 'Persistent High Fever & Weakness',
+    isGuest: true,
+    age: 45,
+    scheduledTime: '10:00 AM',
     calledAt: new Date(Date.now() - 10 * 60000).toISOString(),
     createdAt: new Date(Date.now() - 35 * 60000).toISOString(),
   },
@@ -296,7 +331,47 @@ const INITIAL_QUEUE: QueueEntry[] = [
     status: 'waiting',
     position: 1,
     estimatedWaitMinutes: 25,
+    purpose: 'Severe Joint Pain & Mobility Issue',
+    isGuest: false,
+    age: 69,
+    isElderly: true,
+    accessibilityNeeds: ['wheelchair'],
+    scheduledTime: '10:20 AM',
     createdAt: new Date(Date.now() - 20 * 60000).toISOString(),
+  },
+  {
+    id: 'q-opd-4',
+    token: 'OPD-104',
+    patientName: 'Mohit Deshmukh',
+    departmentId: 'opd-general',
+    roomNumber: '101',
+    status: 'waiting',
+    position: 2,
+    estimatedWaitMinutes: 37,
+    purpose: 'Stomach Cramps & Nausea',
+    isGuest: false,
+    age: 28,
+    scheduledTime: '10:40 AM',
+    createdAt: new Date(Date.now() - 12 * 60000).toISOString(),
+  },
+
+  // Emergency Triage Queue
+  {
+    id: 'q-emg-1',
+    token: 'EMG-08',
+    patientName: 'Harish Chandra (Guest)',
+    departmentId: 'emergency',
+    roomNumber: 'ER Bay 1',
+    status: 'in_progress',
+    position: 0,
+    estimatedWaitMinutes: 0,
+    purpose: 'Acute Chest Pain & Severe Dizziness',
+    isGuest: true,
+    isEmergency: true,
+    age: 54,
+    scheduledTime: 'Immediate',
+    calledAt: new Date(Date.now() - 2 * 60000).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
   },
 
   // Blood Lab Queue
@@ -309,18 +384,28 @@ const INITIAL_QUEUE: QueueEntry[] = [
     status: 'in_progress',
     position: 0,
     estimatedWaitMinutes: 0,
+    purpose: 'Fasting Blood Sugar & CBC Profile',
+    isGuest: false,
+    age: 50,
+    scheduledTime: '10:15 AM',
     calledAt: new Date(Date.now() - 4 * 60000).toISOString(),
     createdAt: new Date(Date.now() - 25 * 60000).toISOString(),
   },
   {
     id: 'q-lab-2',
     token: 'LAB-49',
-    patientName: 'Anil Deshmukh',
+    patientName: 'Anil Deshmukh (Guest)',
     departmentId: 'lab-blood',
     roomNumber: 'Basement Lab 1',
     status: 'waiting',
     position: 1,
     estimatedWaitMinutes: 28, // 8 min wait + 20 min lab delay
+    purpose: 'Kidney Function Test (KFT)',
+    isGuest: true,
+    age: 66,
+    isElderly: true,
+    accessibilityNeeds: ['walking_difficulty'],
+    scheduledTime: '10:30 AM',
     createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
   },
 ];
@@ -328,6 +413,15 @@ const INITIAL_QUEUE: QueueEntry[] = [
 const INITIAL_ALERTS: LiveAlert[] = [
   {
     id: 'alert-initial-1',
+    type: 'emergency',
+    title: 'ACTIVE EMERGENCY ALERT: Ground Floor Lift A',
+    message: 'Patient at Ground Floor Lift A reported chest pain and severe shortness of breath.',
+    departmentId: 'emergency',
+    active: true,
+    timestamp: new Date(Date.now() - 2 * 60000).toISOString(),
+  },
+  {
+    id: 'alert-initial-2',
     type: 'info',
     title: 'Real-Time Hospital Queue Connected',
     message: 'Live status and wait times sync automatically between department counters and patient slips.',
@@ -336,7 +430,18 @@ const INITIAL_ALERTS: LiveAlert[] = [
   },
 ];
 
-const INITIAL_EMERGENCY_REQUESTS: EmergencyRequest[] = [];
+const INITIAL_EMERGENCY_REQUESTS: EmergencyRequest[] = [
+  {
+    id: 'emg-init-1',
+    symptoms: ['Chest pain', 'Difficulty breathing'],
+    note: 'Sitting on bench right outside Central Lift A, feeling very dizzy.',
+    landmark: 'Ground Floor Near Lift A',
+    patientToken: 'CARD-1042',
+    patientName: 'Ramesh Sharma',
+    status: 'alerted',
+    timestamp: new Date(Date.now() - 2 * 60000).toISOString(),
+  },
+];
 
 const INITIAL_NOTIFICATIONS: PatientNotification[] = [
   {
@@ -835,11 +940,14 @@ export async function callNextPatient(
     (q) => q.departmentId === departmentId && q.position === 1 && q.status === 'turn_soon'
   );
   if (upNextPatient) {
-    addNotification({
-      type: 'turn_soon',
-      title: 'Your turn is coming',
-      message: `Token ${upNextPatient.token}: You are next in line! Please wait near Room ${updatedDept.roomNumber || 'the consultation room'}.`,
-      actionUrl: `/patient/live?token=${upNextPatient.token}&dept=${departmentId}`,
+      const roomTarget = updatedDept.roomNumber
+        ? (updatedDept.roomNumber.toLowerCase().startsWith('room') ? updatedDept.roomNumber : `Room ${updatedDept.roomNumber}`)
+        : 'the consultation room';
+      addNotification({
+        type: 'turn_soon',
+        title: 'Your turn is coming',
+        message: `Token ${upNextPatient.token}: You are next in line! Please wait near ${roomTarget}.`,
+        actionUrl: `/patient/live?token=${upNextPatient.token}&dept=${departmentId}`,
       actionLabel: 'View Live Room Status',
       token: upNextPatient.token,
       departmentId,
@@ -904,6 +1012,237 @@ export async function updateQueueEntryStatus(
   }
 
   return nextState.queue.find((q) => q.token.toUpperCase() === token.toUpperCase()) || null;
+}
+
+/** Start a patient consultation directly (marks in_progress, updates dept token & status) */
+export async function startPatientConsultation(token: string): Promise<void> {
+  const norm = token.toUpperCase();
+  const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
+  if (!entry) return;
+
+  const dept = memoryState.departments[entry.departmentId];
+  const prevCurrentToken = dept?.currentToken;
+
+  const updatedQueue = memoryState.queue.map((q) => {
+    if (q.departmentId !== entry.departmentId) return q;
+
+    // Previous in_progress patient is completed
+    if (prevCurrentToken && q.token.toUpperCase() === prevCurrentToken.toUpperCase() && q.status === 'in_progress') {
+      return {
+        ...q,
+        status: 'completed' as QueueStatus,
+        position: 0,
+        estimatedWaitMinutes: 0,
+      };
+    }
+
+    // Target patient becomes in_progress
+    if (q.token.toUpperCase() === norm) {
+      return {
+        ...q,
+        status: 'in_progress' as QueueStatus,
+        position: 0,
+        estimatedWaitMinutes: 0,
+        calledAt: new Date().toISOString(),
+      };
+    }
+
+    return q;
+  });
+
+  const updatedDept: DepartmentLiveStatus = {
+    ...(dept || {
+      departmentId: entry.departmentId,
+      departmentName: entry.departmentId,
+      roomNumber: entry.roomNumber || '101',
+      floor: 0,
+      building: 'Main Block',
+      activeDoctorName: 'Doctor on Duty',
+      estimatedWaitPerPatientMinutes: 10,
+      lastUpdated: new Date().toISOString(),
+    }),
+    currentToken: entry.token,
+    statusMessage: 'Doctor with another patient',
+    statusCode: 'busy',
+    lastUpdated: new Date().toISOString(),
+  };
+
+  let nextState: LiveStoreState = {
+    ...memoryState,
+    departments: {
+      ...memoryState.departments,
+      [entry.departmentId]: updatedDept,
+    },
+    queue: updatedQueue,
+  };
+
+  nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
+  commitState(nextState);
+
+  // Send completed notification for previous patient if any
+  if (prevCurrentToken && prevCurrentToken.toUpperCase() !== norm) {
+    addNotification({
+      type: 'completed',
+      title: 'Your consultation is complete',
+      message: `Consultation for token ${prevCurrentToken} is marked done. Next steps: collect medicines and lab reports.`,
+      actionUrl: '/patient/completion',
+      actionLabel: 'View Next Steps',
+      token: prevCurrentToken,
+      departmentId: entry.departmentId,
+    });
+  }
+}
+
+/** Complete a patient consultation (marks completed, triggers completion notification) */
+export async function completePatientConsultation(token: string): Promise<void> {
+  const norm = token.toUpperCase();
+  const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
+  if (!entry) return;
+
+  const dept = memoryState.departments[entry.departmentId];
+  const isCurrentToken = dept?.currentToken?.toUpperCase() === norm;
+
+  const updatedQueue = memoryState.queue.map((q) => {
+    if (q.token.toUpperCase() === norm) {
+      return {
+        ...q,
+        status: 'completed' as QueueStatus,
+        position: 0,
+        estimatedWaitMinutes: 0,
+      };
+    }
+    return q;
+  });
+
+  const updatedDept: DepartmentLiveStatus = {
+    ...(dept || {
+      departmentId: entry.departmentId,
+      departmentName: entry.departmentId,
+      roomNumber: '101',
+      floor: 0,
+      building: 'Main Block',
+      activeDoctorName: 'Doctor on Duty',
+      estimatedWaitPerPatientMinutes: 10,
+      lastUpdated: new Date().toISOString(),
+    }),
+    currentToken: isCurrentToken ? null : (dept?.currentToken || null),
+    statusMessage: isCurrentToken ? 'Consultations running on schedule' : (dept?.statusMessage || 'Operational'),
+    statusCode: isCurrentToken ? 'normal' : (dept?.statusCode || 'normal'),
+    lastUpdated: new Date().toISOString(),
+  };
+
+  let nextState: LiveStoreState = {
+    ...memoryState,
+    departments: {
+      ...memoryState.departments,
+      [entry.departmentId]: updatedDept,
+    },
+    queue: updatedQueue,
+  };
+
+  nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
+  commitState(nextState);
+
+  // Trigger patient completion notification
+  addNotification({
+    type: 'completed',
+    title: 'Your consultation is complete',
+    message: `Consultation for token ${entry.token} is marked done. Next steps: pharmacy & test reports.`,
+    actionUrl: '/patient/completion',
+    actionLabel: 'View Next Steps',
+    token: entry.token,
+    departmentId: entry.departmentId,
+  });
+}
+
+/** Postpone a patient in the queue */
+export async function postponePatient(token: string, spotsDown: number = 2): Promise<void> {
+  const norm = token.toUpperCase();
+  const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
+  if (!entry || entry.status === 'in_progress' || entry.status === 'completed') return;
+
+  const deptWaiting = memoryState.queue.filter(
+    (q) => q.departmentId === entry.departmentId && (q.status === 'waiting' || q.status === 'turn_soon')
+  );
+
+  const currentIndex = deptWaiting.findIndex((q) => q.token.toUpperCase() === norm);
+  if (currentIndex === -1 || currentIndex === deptWaiting.length - 1) return;
+
+  const targetIndex = Math.min(deptWaiting.length - 1, currentIndex + spotsDown);
+  const reordered = [...deptWaiting];
+  const [removed] = reordered.splice(currentIndex, 1);
+  reordered.splice(targetIndex, 0, removed);
+
+  const otherEntries = memoryState.queue.filter(
+    (q) => q.departmentId !== entry.departmentId || (q.status !== 'waiting' && q.status !== 'turn_soon')
+  );
+
+  let nextState: LiveStoreState = {
+    ...memoryState,
+    queue: [...otherEntries, ...reordered],
+  };
+
+  nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
+  commitState(nextState);
+}
+
+/** Move a patient up or down by 1 in the waiting queue */
+export async function movePatientQueue(token: string, direction: 'up' | 'down'): Promise<void> {
+  const norm = token.toUpperCase();
+  const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
+  if (!entry || entry.status === 'in_progress' || entry.status === 'completed') return;
+
+  const deptWaiting = memoryState.queue.filter(
+    (q) => q.departmentId === entry.departmentId && (q.status === 'waiting' || q.status === 'turn_soon')
+  );
+
+  const idx = deptWaiting.findIndex((q) => q.token.toUpperCase() === norm);
+  if (idx === -1) return;
+  if (direction === 'up' && idx === 0) return;
+  if (direction === 'down' && idx === deptWaiting.length - 1) return;
+
+  const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+  const reordered = [...deptWaiting];
+  const temp = reordered[idx];
+  reordered[idx] = reordered[targetIdx];
+  reordered[targetIdx] = temp;
+
+  const otherEntries = memoryState.queue.filter(
+    (q) => q.departmentId !== entry.departmentId || (q.status !== 'waiting' && q.status !== 'turn_soon')
+  );
+
+  let nextState: LiveStoreState = {
+    ...memoryState,
+    queue: [...otherEntries, ...reordered],
+  };
+
+  nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
+  commitState(nextState);
+}
+
+/** Acknowledge an emergency alert */
+export async function acknowledgeEmergencyAlert(alertIdOrReqId: string): Promise<void> {
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    emergencyRequests: (memoryState.emergencyRequests || []).map((req) =>
+      req.id === alertIdOrReqId || alertIdOrReqId.includes(req.id) ? { ...req, status: 'responding' } : req
+    ),
+  };
+  commitState(nextState);
+}
+
+/** Mark emergency alert as attended / resolved */
+export async function resolveEmergencyAlert(alertIdOrReqId: string): Promise<void> {
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    emergencyRequests: (memoryState.emergencyRequests || []).map((req) =>
+      req.id === alertIdOrReqId || alertIdOrReqId.includes(req.id) ? { ...req, status: 'resolved' } : req
+    ),
+    alerts: (memoryState.alerts || []).map((a) =>
+      a.id === alertIdOrReqId || a.id.includes(alertIdOrReqId) || a.type === 'emergency' ? { ...a, active: false } : a
+    ),
+  };
+  commitState(nextState);
 }
 
 /** Publish a live hospital alert (emergency, delay, announcement) */
@@ -1151,6 +1490,13 @@ export function useLiveStore() {
 
   const dismissAlert = useCallback((id: string) => dismissLiveAlert(id), []);
 
+  const startConsult = useCallback((token: string) => startPatientConsultation(token), []);
+  const completeConsult = useCallback((token: string) => completePatientConsultation(token), []);
+  const postpone = useCallback((token: string, spots?: number) => postponePatient(token, spots), []);
+  const moveQueue = useCallback((token: string, dir: 'up' | 'down') => movePatientQueue(token, dir), []);
+  const ackEmergency = useCallback((id: string) => acknowledgeEmergencyAlert(id), []);
+  const resEmergency = useCallback((id: string) => resolveEmergencyAlert(id), []);
+
   const reset = useCallback(() => resetLiveStore(), []);
 
   return {
@@ -1160,6 +1506,12 @@ export function useLiveStore() {
     setDepartmentCustomStatus: setCustomStatus,
     callNextPatient: callNext,
     updateQueueEntryStatus: updateEntry,
+    startPatientConsultation: startConsult,
+    completePatientConsultation: completeConsult,
+    postponePatient: postpone,
+    movePatientQueue: moveQueue,
+    acknowledgeEmergencyAlert: ackEmergency,
+    resolveEmergencyAlert: resEmergency,
     publishLiveAlert: publishAlert,
     dismissLiveAlert: dismissAlert,
     resetLiveStore: reset,

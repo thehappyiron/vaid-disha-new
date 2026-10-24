@@ -34,6 +34,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getSlipById } from '../services/hospitalService';
 import { usePatientLiveStatus } from '../services/liveStore';
+import { textToSpeech } from '../services/voice';
 import type { Slip } from '../types';
 
 function formatTime(iso: string): string {
@@ -130,28 +131,21 @@ export function SlipPage() {
   };
 
   const handleSpeakDirections = () => {
-    if (!('speechSynthesis' in window)) return;
+    if (!textToSpeech.isSupported()) return;
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      textToSpeech.stop();
       setIsSpeaking(false);
       return;
     }
     const text = slip?.humanReadableDirection || '';
     if (!text) return;
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    const langMap: Record<string, string> = {
-      en: 'en-IN',
-      hi: 'hi-IN',
-      mr: 'mr-IN',
-    };
-    utterance.lang = langMap[i18n.language] || 'en-IN';
-    utterance.rate = 0.9;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
     setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
+    textToSpeech.speak(text, i18n.language, {
+      rate: 0.9,
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
   };
 
   const handleShare = async () => {
@@ -358,11 +352,12 @@ export function SlipPage() {
     }
 
     if (effectiveStatus === 'in_progress') {
+      const activeRoom = slip.roomNumber || deptLive?.roomNumber;
       return {
         variant: 'success' as const,
         icon: <UserCheck size={18} className="text-emerald-700 shrink-0 animate-pulse" aria-hidden="true" />,
         badgeLabel: t('slip.status_in_progress'),
-        headline: `Attending Now in Room ${slip.roomNumber || deptLive?.roomNumber || '101'}`,
+        headline: activeRoom ? `Attending Now in Room ${activeRoom.replace(/^Room\s*/i, '')}` : 'Attending Now in Consultation Room',
         subtext: 'Please enter the room now. The specialist is attending to you.',
         cardClass: 'bg-emerald-50 border-2 border-emerald-400 text-emerald-950',
         clockColor: 'text-emerald-700',
@@ -371,12 +366,15 @@ export function SlipPage() {
     }
 
     if (effectiveStatus === 'turn_soon') {
+      const activeRoom = slip.roomNumber || deptLive?.roomNumber;
       return {
         variant: 'info' as const,
         icon: <BellRing size={18} className="text-blue-700 shrink-0 animate-bounce" aria-hidden="true" />,
         badgeLabel: t('slip.status_turn_soon'),
         headline: 'Your Turn Soon! (Next in line)',
-        subtext: `Please stay directly outside Room ${slip.roomNumber || deptLive?.roomNumber || '101'}.`,
+        subtext: activeRoom
+          ? `Please stay directly outside Room ${activeRoom.replace(/^Room\s*/i, '')}.`
+          : 'Please stay directly outside the consultation room.',
         cardClass: 'bg-blue-50 border-2 border-blue-400 text-blue-950',
         clockColor: 'text-blue-700',
         waitText: effectiveWait === 0 ? t('slip.no_wait') : t('slip.minutes_wait', { minutes: effectiveWait }),
@@ -555,7 +553,11 @@ export function SlipPage() {
                   icon={<DoorClosed size={22} aria-hidden="true" />}
                   iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
                   title={t('slip.room')}
-                  description={`Room ${slip.roomNumber || slip.department.roomNumbers[0]}`}
+                  description={
+                    slip.roomNumber || slip.department.roomNumbers?.[0]
+                      ? `Room ${(slip.roomNumber || slip.department.roomNumbers[0]).replace(/^Room\s*/i, '')}`
+                      : t('slip.unassigned_room', 'Assigned at counter')
+                  }
                   className="p-3 bg-[var(--color-surface-2)] border-[var(--color-border)]"
                 />
 

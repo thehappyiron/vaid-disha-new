@@ -356,13 +356,16 @@
     align-items:     center;
     justify-content: center;
     gap:             0.5rem;
-    min-height:      3.5rem;       /* 56px tap target */
-    padding:         0 1.5rem;
+    min-height:      3.5rem;       /* 56px tap target (min-h-14) */
+    padding:         0.75rem 1rem; /* px-4 py-3 */
     border-radius:   var(--radius-md);
     font-size:       1rem;
     font-weight:     700;
     font-family:     inherit;
-    white-space:     nowrap;
+    white-space:     normal;
+    overflow-wrap:   break-word;
+    word-break:      break-word;
+    text-align:      center;
     text-decoration: none;
     cursor:          pointer;
     border:          2px solid transparent;
