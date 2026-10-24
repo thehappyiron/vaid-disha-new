@@ -50,10 +50,43 @@ export interface LiveAlert {
   timestamp: string;
 }
 
+export interface EmergencyRequest {
+  id: string;
+  symptoms: string[];
+  note?: string;
+  landmark: string;
+  patientToken?: string;
+  patientName?: string;
+  status: 'alerted' | 'responding' | 'resolved';
+  timestamp: string;
+}
+
+export type NotificationTriggerType =
+  | 'turn_soon'
+  | 'completed'
+  | 'report_ready'
+  | 'emergency'
+  | 'general';
+
+export interface PatientNotification {
+  id: string;
+  type: NotificationTriggerType;
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  actionUrl?: string;
+  actionLabel?: string;
+  token?: string;
+  departmentId?: string;
+}
+
 export interface LiveStoreState {
   queue: QueueEntry[];
   departments: Record<string, DepartmentLiveStatus>;
   alerts: LiveAlert[];
+  emergencyRequests: EmergencyRequest[];
+  notifications: PatientNotification[];
   lastUpdated: string;
 }
 
@@ -303,6 +336,45 @@ const INITIAL_ALERTS: LiveAlert[] = [
   },
 ];
 
+const INITIAL_EMERGENCY_REQUESTS: EmergencyRequest[] = [];
+
+const INITIAL_NOTIFICATIONS: PatientNotification[] = [
+  {
+    id: 'notif-1',
+    type: 'turn_soon',
+    title: 'Your turn is coming',
+    message: 'Token CARD-1042: You are next in line for Cardiology OPD (Room 204). Please proceed near the door.',
+    timestamp: new Date(Date.now() - 3 * 60000).toISOString(),
+    read: false,
+    actionUrl: '/patient/live?token=CARD-1042&dept=opd-cardio',
+    actionLabel: 'View Live Room Status',
+    token: 'CARD-1042',
+    departmentId: 'opd-cardio',
+  },
+  {
+    id: 'notif-2',
+    type: 'report_ready',
+    title: 'Your lab report is ready',
+    message: 'Pathology Lab: Complete Blood Count (CBC) and Lipid Profile reports have been processed.',
+    timestamp: new Date(Date.now() - 45 * 60000).toISOString(),
+    read: false,
+    actionUrl: '/patient/history',
+    actionLabel: 'View Report',
+  },
+  {
+    id: 'notif-3',
+    type: 'completed',
+    title: 'Your consultation is complete',
+    message: 'Consultation with General OPD is marked done. Next steps: collect prescribed medicines at Pharmacy.',
+    timestamp: new Date(Date.now() - 120 * 60000).toISOString(),
+    read: true,
+    actionUrl: '/patient/completion',
+    actionLabel: 'View Next Steps',
+    token: 'OPD-101',
+    departmentId: 'opd-general',
+  },
+];
+
 // ─── STORAGE & BROADCAST SYNC CORE ──────────────────────────────────────────
 
 const STORAGE_KEY = 'vd_live_store_v1';
@@ -349,6 +421,8 @@ function loadFromStorage(): LiveStoreState {
       queue: INITIAL_QUEUE,
       departments: INITIAL_DEPARTMENTS,
       alerts: INITIAL_ALERTS,
+      emergencyRequests: INITIAL_EMERGENCY_REQUESTS,
+      notifications: INITIAL_NOTIFICATIONS,
       lastUpdated: new Date().toISOString(),
     };
   }
@@ -359,7 +433,12 @@ function loadFromStorage(): LiveStoreState {
       const parsed: LiveStoreState = JSON.parse(raw);
       // Ensure essential fields exist
       if (parsed.queue && parsed.departments) {
-        return parsed;
+        return {
+          ...parsed,
+          alerts: parsed.alerts || INITIAL_ALERTS,
+          emergencyRequests: parsed.emergencyRequests || INITIAL_EMERGENCY_REQUESTS,
+          notifications: parsed.notifications || INITIAL_NOTIFICATIONS,
+        };
       }
     }
   } catch (err) {
@@ -370,6 +449,8 @@ function loadFromStorage(): LiveStoreState {
     queue: INITIAL_QUEUE,
     departments: INITIAL_DEPARTMENTS,
     alerts: INITIAL_ALERTS,
+    emergencyRequests: INITIAL_EMERGENCY_REQUESTS,
+    notifications: INITIAL_NOTIFICATIONS,
     lastUpdated: new Date().toISOString(),
   };
 
@@ -736,6 +817,35 @@ export async function callNextPatient(
   nextState = recomputeDepartmentQueue(nextState, departmentId);
   commitState(nextState);
 
+  // Trigger notification if consultation completed
+  if (currentToken) {
+    addNotification({
+      type: 'completed',
+      title: 'Your consultation is complete',
+      message: `Consultation for token ${currentToken} is marked done. Next steps: collect medicines and lab reports.`,
+      actionUrl: '/patient/completion',
+      actionLabel: 'View Next Steps',
+      token: currentToken,
+      departmentId,
+    });
+  }
+
+  // Trigger notification if a waiting patient is now next in line (turn_soon)
+  const upNextPatient = nextState.queue.find(
+    (q) => q.departmentId === departmentId && q.position === 1 && q.status === 'turn_soon'
+  );
+  if (upNextPatient) {
+    addNotification({
+      type: 'turn_soon',
+      title: 'Your turn is coming',
+      message: `Token ${upNextPatient.token}: You are next in line! Please wait near Room ${updatedDept.roomNumber || 'the consultation room'}.`,
+      actionUrl: `/patient/live?token=${upNextPatient.token}&dept=${departmentId}`,
+      actionLabel: 'View Live Room Status',
+      token: upNextPatient.token,
+      departmentId,
+    });
+  }
+
   return {
     completedToken: currentToken,
     nextToken: nextPatient ? nextPatient.token : null,
@@ -770,6 +880,29 @@ export async function updateQueueEntryStatus(
   nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
   commitState(nextState);
 
+  // Trigger relevant notification on status update
+  if (status === 'completed') {
+    addNotification({
+      type: 'completed',
+      title: 'Your consultation is complete',
+      message: `Consultation for token ${token} is marked done. Next steps: collect medicines and lab reports.`,
+      actionUrl: '/patient/completion',
+      actionLabel: 'View Next Steps',
+      token,
+      departmentId: entry.departmentId,
+    });
+  } else if (status === 'turn_soon') {
+    addNotification({
+      type: 'turn_soon',
+      title: 'Your turn is coming',
+      message: `Token ${token}: You are next in line! Please wait near the consultation room.`,
+      actionUrl: `/patient/live?token=${token}&dept=${entry.departmentId}`,
+      actionLabel: 'View Live Status',
+      token,
+      departmentId: entry.departmentId,
+    });
+  }
+
   return nextState.queue.find((q) => q.token.toUpperCase() === token.toUpperCase()) || null;
 }
 
@@ -801,12 +934,165 @@ export async function dismissLiveAlert(alertId: string): Promise<void> {
   commitState(nextState);
 }
 
+// ─── NOTIFICATION & EMERGENCY HELPERS ────────────────────────────────────────
+
+/** Browser Notification API helper */
+export function sendBrowserNotification(title: string, options?: { body?: string; icon?: string }) {
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, {
+        body: options?.body,
+        icon: options?.icon || '/favicon.ico',
+      });
+    } catch (err) {
+      console.warn('Failed to display browser notification', err);
+    }
+  }
+}
+
+/** In-page Toast Event Emitter */
+export function emitNotificationToast(notification: PatientNotification) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('vd_toast_notification', { detail: notification })
+    );
+  }
+}
+
+/** Request Browser Notification Permission */
+export async function requestBrowserNotificationPermission(): Promise<NotificationPermission | 'unsupported'> {
+  if (typeof window === 'undefined' || !('Notification' in window)) {
+    return 'unsupported';
+  }
+  try {
+    const perm = await Notification.requestPermission();
+    return perm;
+  } catch {
+    return 'denied';
+  }
+}
+
+/** Add a new notification, dispatching toast and browser push if enabled */
+export async function addNotification(
+  params: Omit<PatientNotification, 'id' | 'timestamp' | 'read'>
+): Promise<PatientNotification> {
+  const notif: PatientNotification = {
+    ...params,
+    id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    timestamp: new Date().toISOString(),
+    read: false,
+  };
+
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    notifications: [notif, ...(memoryState.notifications || [])],
+  };
+
+  commitState(nextState);
+
+  // Trigger in-app toast & browser push notification
+  emitNotificationToast(notif);
+  sendBrowserNotification(notif.title, { body: notif.message });
+
+  return notif;
+}
+
+/** Mark notification as read */
+export async function markNotificationAsRead(id: string): Promise<void> {
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    notifications: (memoryState.notifications || []).map((n) =>
+      n.id === id ? { ...n, read: true } : n
+    ),
+  };
+  commitState(nextState);
+}
+
+/** Mark all notifications as read */
+export async function markAllNotificationsAsRead(): Promise<void> {
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    notifications: (memoryState.notifications || []).map((n) => ({ ...n, read: true })),
+  };
+  commitState(nextState);
+}
+
+/** Clear all notifications */
+export async function clearAllNotifications(): Promise<void> {
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    notifications: [],
+  };
+  commitState(nextState);
+}
+
+/** Create and record an emergency request from patient */
+export async function createEmergencyAlert(params: {
+  symptoms: string[];
+  note?: string;
+  landmark: string;
+  patientToken?: string;
+  patientName?: string;
+}): Promise<EmergencyRequest> {
+  const newReq: EmergencyRequest = {
+    id: `emg-${Date.now()}`,
+    symptoms: params.symptoms,
+    note: params.note,
+    landmark: params.landmark,
+    patientToken: params.patientToken,
+    patientName: params.patientName,
+    status: 'alerted',
+    timestamp: new Date().toISOString(),
+  };
+
+  const symptomList = params.symptoms.length > 0 ? params.symptoms.join(', ') : 'Urgent medical distress';
+  const alertTitle = `URGENT PATIENT ALERT: ${params.landmark}`;
+  const alertMsg = `Patient ${params.patientName || params.patientToken || 'in distress'} at ${params.landmark}: ${symptomList}.${params.note ? ` Note: "${params.note}"` : ''}`;
+
+  const newAlert: LiveAlert = {
+    id: `alert-emg-${Date.now()}`,
+    type: 'emergency',
+    title: alertTitle,
+    message: alertMsg,
+    active: true,
+    timestamp: new Date().toISOString(),
+  };
+
+  const notif: PatientNotification = {
+    id: `notif-emg-${Date.now()}`,
+    type: 'emergency',
+    title: 'Staff have been alerted',
+    message: `Hospital rapid response notified for ${params.landmark}. Please stay where you are or sit nearby.`,
+    timestamp: new Date().toISOString(),
+    read: false,
+    actionUrl: '/patient/emergency',
+    actionLabel: 'View Emergency Status',
+  };
+
+  const nextState: LiveStoreState = {
+    ...memoryState,
+    emergencyRequests: [newReq, ...(memoryState.emergencyRequests || [])],
+    alerts: [newAlert, ...memoryState.alerts],
+    notifications: [notif, ...(memoryState.notifications || [])],
+  };
+
+  commitState(nextState);
+  emitNotificationToast(notif);
+  sendBrowserNotification('Staff Alerted: Immediate Response Dispatched', {
+    body: 'Medical staff have been alerted to your location. Please stay where you are.',
+  });
+
+  return newReq;
+}
+
 /** Reset live store back to default mock data */
 export async function resetLiveStore(): Promise<LiveStoreState> {
   const defaultState: LiveStoreState = {
     queue: INITIAL_QUEUE,
     departments: INITIAL_DEPARTMENTS,
     alerts: INITIAL_ALERTS,
+    emergencyRequests: INITIAL_EMERGENCY_REQUESTS,
+    notifications: INITIAL_NOTIFICATIONS,
     lastUpdated: new Date().toISOString(),
   };
 
@@ -948,4 +1234,84 @@ export function usePatientLiveStatus(token?: string, departmentId?: string) {
   }, [evaluateStatus]);
 
   return liveData;
+}
+
+/**
+ * useNotifications: Hook to access live notification state,
+ * unread count, mark as read, and browser push permission.
+ */
+export function useNotifications() {
+  const [notifications, setNotifications] = useState<PatientNotification[]>(
+    () => memoryState.notifications || []
+  );
+
+  useEffect(() => {
+    setNotifications(memoryState.notifications || []);
+    const unsubscribe = subscribeToLiveStore((newState) => {
+      setNotifications(newState.notifications || []);
+    });
+    return unsubscribe;
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const markAsRead = useCallback(
+    (id: string) => markNotificationAsRead(id),
+    []
+  );
+
+  const markAllAsRead = useCallback(
+    () => markAllNotificationsAsRead(),
+    []
+  );
+
+  const clearAll = useCallback(
+    () => clearAllNotifications(),
+    []
+  );
+
+  const requestPermission = useCallback(
+    () => requestBrowserNotificationPermission(),
+    []
+  );
+
+  const sendTest = useCallback((type: NotificationTriggerType) => {
+    if (type === 'turn_soon') {
+      return addNotification({
+        type: 'turn_soon',
+        title: 'Your turn is coming',
+        message: 'Token CARD-1042: You are next in line! Please proceed to Room 204 (Cardiology OPD).',
+        actionUrl: '/patient/live?token=CARD-1042&dept=opd-cardio',
+        actionLabel: 'View Live Room Status',
+        token: 'CARD-1042',
+      });
+    } else if (type === 'completed') {
+      return addNotification({
+        type: 'completed',
+        title: 'Your consultation is complete',
+        message: 'Your consultation with Dr. S. Sharma is complete. Next steps: collect medicines and reports.',
+        actionUrl: '/patient/completion',
+        actionLabel: 'View Next Steps',
+        token: 'CARD-1042',
+      });
+    } else {
+      return addNotification({
+        type: 'report_ready',
+        title: 'Your lab report is ready',
+        message: 'Pathology Lab: Complete Blood Count & Lipid Profile report is ready for download.',
+        actionUrl: '/patient/history',
+        actionLabel: 'View Report',
+      });
+    }
+  }, []);
+
+  return {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+    requestPermission,
+    sendTestNotification: sendTest,
+  };
 }

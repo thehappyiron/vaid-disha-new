@@ -15,12 +15,15 @@ import {
   Trash2,
   Sparkles,
   Users,
+  FileText,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
 import { Button, StatusBadge } from '../../components/ui';
 import {
   useLiveStore,
+  useNotifications,
   ensurePatientInQueue,
+  createEmergencyAlert,
   type DepartmentStatusCode,
   type QueueStatus,
 } from '../../services/liveStore';
@@ -37,6 +40,8 @@ export function DevStorePage() {
     dismissLiveAlert,
     resetLiveStore,
   } = useLiveStore();
+
+  const { sendTestNotification, requestPermission } = useNotifications();
 
   const [selectedDeptId, setSelectedDeptId] = useState<string>('opd-cardio');
   const [customWaitMinutes, setCustomWaitMinutes] = useState<number>(15);
@@ -175,20 +180,41 @@ export function DevStorePage() {
               <Radio size={16} className="text-red-500 animate-pulse" />
               Multi-Tab Live Testing Playground
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Link
                 to="/patient/slip"
                 target="_blank"
                 className="btn btn-sm btn-secondary text-xs font-bold bg-white"
               >
-                Open /patient/slip in Tab 2 ↗
+                /patient/slip ↗
               </Link>
               <Link
                 to="/patient/live"
                 target="_blank"
                 className="btn btn-sm btn-primary text-xs font-bold"
               >
-                Open /patient/live in Tab 2 ↗
+                /patient/live ↗
+              </Link>
+              <Link
+                to="/patient/notifications"
+                target="_blank"
+                className="btn btn-sm btn-secondary text-xs font-bold bg-white"
+              >
+                /patient/notifications ↗
+              </Link>
+              <Link
+                to="/patient/completion"
+                target="_blank"
+                className="btn btn-sm btn-secondary text-xs font-bold bg-white"
+              >
+                /patient/completion ↗
+              </Link>
+              <Link
+                to="/patient/emergency"
+                target="_blank"
+                className="btn btn-sm btn-secondary text-xs font-bold text-red-600 bg-white"
+              >
+                /patient/emergency ↗
               </Link>
             </div>
           </div>
@@ -603,6 +629,119 @@ export function DevStorePage() {
                 ))}
             </div>
           )}
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            CONTROLS SECTION 5: NOTIFICATIONS & EMERGENCY TRIGGERS
+            ══════════════════════════════════════════════════════════════════ */}
+        <div className="card p-5 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col gap-3 shadow-2xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[var(--color-primary-700)]">
+              <BellRing size={16} />
+              Simulate Notifications & Patient Emergency Triggers
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={async () => {
+                const res = await requestPermission();
+                showToast(`Browser permission status: ${res}`);
+              }}
+            >
+              🔔 Request Browser Push Permission
+            </Button>
+          </div>
+
+          <p className="text-xs font-medium text-[var(--color-text-muted)]">
+            Click any button below to emit real-time in-page toast banners, browser notifications, and update the bell badge across open tabs:
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+            {/* Trigger 1: Your turn is coming */}
+            <button
+              type="button"
+              onClick={() => {
+                sendTestNotification('turn_soon');
+                showToast('Triggered "Your turn is coming" notification!');
+              }}
+              className="p-3 rounded-xl border border-blue-300 bg-blue-50/80 hover:bg-blue-100 text-blue-950 font-bold text-xs flex items-center gap-2.5 text-left transition-colors"
+            >
+              <BellRing size={18} className="text-blue-700 shrink-0 animate-bounce" />
+              <div>
+                <span className="block font-black">Trigger: "Your turn is coming"</span>
+                <span className="text-[11px] opacity-80">Emits toast banner & lock-screen push</span>
+              </div>
+            </button>
+
+            {/* Trigger 2: Your consultation is complete */}
+            <button
+              type="button"
+              onClick={() => {
+                sendTestNotification('completed');
+                showToast('Triggered "Your consultation is complete" notification!');
+              }}
+              className="p-3 rounded-xl border border-emerald-300 bg-emerald-50/80 hover:bg-emerald-100 text-emerald-950 font-bold text-xs flex items-center gap-2.5 text-left transition-colors"
+            >
+              <UserCheck size={18} className="text-emerald-700 shrink-0" />
+              <div>
+                <span className="block font-black">Trigger: "Your consultation is complete"</span>
+                <span className="text-[11px] opacity-80">Leads to /patient/completion screen</span>
+              </div>
+            </button>
+
+            {/* Trigger 3: Your lab report is ready */}
+            <button
+              type="button"
+              onClick={() => {
+                sendTestNotification('report_ready');
+                showToast('Triggered "Your lab report is ready" notification!');
+              }}
+              className="p-3 rounded-xl border border-indigo-300 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-950 font-bold text-xs flex items-center gap-2.5 text-left transition-colors"
+            >
+              <FileText size={18} className="text-indigo-700 shrink-0" />
+              <div>
+                <span className="block font-black">Trigger: "Your lab report is ready"</span>
+                <span className="text-[11px] opacity-80">Notification with link to view report</span>
+              </div>
+            </button>
+
+            {/* Trigger 4: Simulate Emergency Alert */}
+            <button
+              type="button"
+              onClick={async () => {
+                await createEmergencyAlert({
+                  symptoms: ['Chest pain or heavy tightness', 'Difficulty breathing'],
+                  landmark: 'Near Lift B & Washrooms (Ground Floor)',
+                  patientToken: 'CARD-1042',
+                  patientName: 'Ramesh Sharma',
+                  note: 'Sitting on bench near water dispenser, feels dizzy',
+                });
+                showToast('Emergency alert written to live store!');
+              }}
+              className="p-3 rounded-xl border border-red-400 bg-red-50/80 hover:bg-red-100 text-red-950 font-bold text-xs flex items-center gap-2.5 text-left transition-colors"
+            >
+              <TriangleAlert size={18} className="text-red-600 shrink-0 animate-pulse" />
+              <div>
+                <span className="block font-black">Simulate Emergency Alert (Lift B)</span>
+                <span className="text-[11px] opacity-80">Writes to liveStore.emergencyRequests</span>
+              </div>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2 border-t border-[var(--color-border)]">
+            <Link
+              to="/patient/notifications"
+              className="btn btn-sm btn-secondary text-xs font-bold"
+            >
+              View /patient/notifications Page →
+            </Link>
+            <Link
+              to="/patient/completion"
+              className="btn btn-sm btn-secondary text-xs font-bold"
+            >
+              View /patient/completion Page →
+            </Link>
+          </div>
         </div>
 
         {/* ══════════════════════════════════════════════════════════════════

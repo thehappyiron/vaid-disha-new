@@ -11,6 +11,8 @@ import {
   PatientHistoryPage,
   PatientGuidancePage,
   PatientLivePage,
+  PatientNotificationsPage,
+  PatientCompletionPage,
 } from './pages/patient';
 import { StaffLoginPage, StaffDashboardPage } from './pages/staff';
 import { AdminComingSoonPage } from './pages/admin';
@@ -36,6 +38,13 @@ export function App() {
             <Route path="/patient/emergency" element={<EmergencyPage />} />
             <Route path="/patient/visit" element={<PatientVisitPage />} />
             <Route path="/patient/history" element={<PatientHistoryPage />} />
+
+            {/* Real-time Notifications list */}
+            <Route path="/patient/notifications" element={<PatientNotificationsPage />} />
+            <Route path="/notifications" element={<PatientNotificationsPage />} />
+
+            {/* Post-consultation Completion Screen */}
+            <Route path="/patient/completion" element={<PatientCompletionPage />} />
 
             {/* Patient Guidance / Find My Way */}
             <Route path="/patient/guidance/:slipId" element={<PatientGuidancePage />} />

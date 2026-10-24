@@ -4,3 +4,5 @@ export * from './PatientVisitPage';
 export * from './PatientHistoryPage';
 export * from './PatientGuidancePage';
 export * from './PatientLivePage';
+export * from './PatientNotificationsPage';
+export * from './PatientCompletionPage';

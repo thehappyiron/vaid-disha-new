@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, Accessibility, Ticket } from 'lucide-react';
+import { Home, Accessibility, Ticket, Bell } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { AccessibilityPanel } from './AccessibilityPanel';
+import { useNotifications } from '../../services/liveStore';
 
 interface AppHeaderProps {
   showHome?: boolean;
@@ -16,11 +17,13 @@ interface AppHeaderProps {
  * - App name / optional title
  * - Language switcher
  * - Accessibility settings button (opens bottom sheet panel)
+ * - Notification bell with live unread counter
  * - Optional home link
  */
 export function AppHeader({ showHome = false, title, isStaff = false }: AppHeaderProps) {
   const { t } = useTranslation();
   const [panelOpen, setPanelOpen] = useState(false);
+  const { unreadCount } = useNotifications();
 
   const containerClasses = isStaff
     ? 'max-w-md md:max-w-7xl mx-auto px-4 md:px-8 py-2 flex items-center gap-1.5 sm:gap-2'
@@ -48,6 +51,21 @@ export function AppHeader({ showHome = false, title, isStaff = false }: AppHeade
           <span className="font-bold text-[var(--color-primary-500)] text-base sm:text-lg flex-1 truncate mr-1">
             {title ?? t('app.name')}
           </span>
+
+          {/* Notification Bell with Unread Badge */}
+          <Link
+            to="/patient/notifications"
+            className="btn btn-ghost btn-icon btn-sm flex-shrink-0 relative"
+            aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+            title={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+          >
+            <Bell size={20} aria-hidden="true" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center border-2 border-[var(--color-surface)] shadow-xs animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </Link>
 
           {/* My Visits / History link */}
           <Link

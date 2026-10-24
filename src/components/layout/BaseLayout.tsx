@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppHeader } from './AppHeader';
+import { NotificationToastContainer } from '../notifications/NotificationToastContainer';
 
 interface BaseLayoutProps {
   children: ReactNode;
@@ -16,6 +17,7 @@ interface BaseLayoutProps {
  * - Skip-to-content link (accessible at top, visible on focus)
  * - <header> landmark via AppHeader
  * - <main> landmark with id="main-content"
+ * - In-page floating real-time notification toasts
  * - Correct role structure for screen readers
  */
 export function BaseLayout({ children, showHome = true, headerTitle, isStaff = false }: BaseLayoutProps) {
@@ -29,6 +31,9 @@ export function BaseLayout({ children, showHome = true, headerTitle, isStaff = f
       </a>
 
       <AppHeader showHome={showHome} title={headerTitle} isStaff={isStaff} />
+
+      {/* Real-time floating in-page notification toasts */}
+      <NotificationToastContainer />
 
       <main
         id="main-content"
