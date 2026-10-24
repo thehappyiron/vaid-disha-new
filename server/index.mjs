@@ -1,5 +1,6 @@
 import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
+import { sendActivityEmail, sendVerificationOtp, verifyOtp } from './email.mjs';
 
 // Local development convenience: load only server-side values from .env.
 // The file is gitignored and is never imported by the Vite client bundle.
@@ -12,6 +13,7 @@ if (existsSync('.env')) {
 
 const port = Number(process.env.PORT || 8787);
 const sarvamKey = process.env.SARVAM_API_KEY;
+const resendKey = process.env.RESEND_API_KEY;
 const sarvamBaseUrl = 'https://api.sarvam.ai';
 const maxBodyBytes = 10 * 1024 * 1024;
 
@@ -92,15 +94,43 @@ const scopeInstruction = `You are Vaid Disha, a hospital wayfinding and patient-
 
 const server = createServer(async (request, response) => {
   response.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGIN || 'http://localhost:5173');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (request.method === 'OPTIONS') { response.writeHead(204); response.end(); return; }
-  if (request.method === 'GET' && request.url === '/api/health') { sendJson(response, sarvamKey ? 200 : 503, { configured: Boolean(sarvamKey) }); return; }
+  if (request.method === 'GET' && request.url === '/api/health') {
+    sendJson(response, 200, { configured: Boolean(sarvamKey), emailConfigured: Boolean(resendKey) });
+    return;
+  }
   if (request.method !== 'POST') { sendJson(response, 405, { error: 'Method not allowed.' }); return; }
-  if (!assertConfigured(response)) return;
 
   try {
     const raw = await readBody(request);
+    if (request.url === '/api/email/send-otp') {
+      const body = JSON.parse(raw.toString('utf8') || '{}');
+      const result = await sendVerificationOtp({
+        email: body.email,
+        patientName: body.patientName || body.patient_name,
+      });
+      sendJson(response, 200, { ok: true, ...result });
+      return;
+    }
+    if (request.url === '/api/email/verify-otp') {
+      const body = JSON.parse(raw.toString('utf8') || '{}');
+      const result = verifyOtp({ email: body.email, otp: body.otp });
+      sendJson(response, 200, { ok: true, ...result });
+      return;
+    }
+    if (request.url === '/api/email/activity') {
+      const body = JSON.parse(raw.toString('utf8') || '{}');
+      const result = await sendActivityEmail({
+        event: body.event,
+        to: body.to,
+        vars: body.vars || {},
+      });
+      sendJson(response, 200, { ok: true, ...result });
+      return;
+    }
+    if (!assertConfigured(response)) return;
     if (request.url === '/api/chat') {
       const requestBody = JSON.parse(raw.toString('utf8'));
       const message = String(requestBody.message || '').trim().slice(0, 800);
@@ -154,7 +184,13 @@ const server = createServer(async (request, response) => {
     }
     sendJson(response, 404, { error: 'Unknown assistant endpoint.' });
   } catch (error) {
-    console.error('Assistant proxy error:', error instanceof Error ? error.message : 'unknown');
+    const status = Number(error?.status) || 502;
+    const message = error instanceof Error ? error.message : 'unknown';
+    if (status < 500) {
+      sendJson(response, status, { error: message });
+      return;
+    }
+    console.error('Assistant proxy error:', message);
     sendJson(response, 502, { error: 'The assistant is temporarily unavailable.' });
   }
 });

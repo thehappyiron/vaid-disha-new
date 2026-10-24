@@ -24,16 +24,19 @@ import {
   Sparkles,
   Coffee,
   Radio,
+  Mail,
 } from 'lucide-react';
 import { BaseLayout } from '../components/layout';
 import {
   Button,
   StatusBadge,
   OptionCard,
+  Input,
 } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
 import { getSlipById } from '../services/hospitalService';
-import { usePatientLiveStatus } from '../services/liveStore';
+import { usePatientLiveStatus, cancelPatientToken } from '../services/liveStore';
+import { sendTokenSharedEmail, sendCancellationEmail, isValidEmail } from '../services/emailService';
 import { textToSpeech } from '../services/voice';
 import type { Slip } from '../types';
 
@@ -85,6 +88,15 @@ export function SlipPage() {
   // Modals state
   const [showReportsModal, setShowReportsModal] = useState(false);
   const [showAmenitiesModal, setShowAmenitiesModal] = useState(false);
+  const [showAttendantModal, setShowAttendantModal] = useState(false);
+  const [attendantEmail, setAttendantEmail] = useState('');
+  const [attendantSending, setAttendantSending] = useState(false);
+  const [attendantFeedback, setAttendantFeedback] = useState<string | null>(null);
+
+  const [showCancelModal, setShowCancelModal] = useState(() =>
+    location.search.includes('cancel=1')
+  );
+  const [isCancelled, setIsCancelled] = useState(false);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -128,6 +140,51 @@ export function SlipPage() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShareWithAttendant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!slip || !isValidEmail(attendantEmail)) {
+      setAttendantFeedback('Please enter a valid email address.');
+      return;
+    }
+    setAttendantSending(true);
+    setAttendantFeedback(null);
+    try {
+      await sendTokenSharedEmail({
+        token: slip.token,
+        attendantEmail,
+        patientName: slip.patientName || 'Patient',
+        doctorName: slip.doctorName || slip.department.doctorName || 'Doctor on Duty',
+      });
+      setAttendantFeedback('Token shared successfully! They will receive live queue updates.');
+      setTimeout(() => {
+        setShowAttendantModal(false);
+        setAttendantEmail('');
+        setAttendantFeedback(null);
+      }, 2500);
+    } catch (err) {
+      setAttendantFeedback(err instanceof Error ? err.message : 'Failed to share token.');
+    } finally {
+      setAttendantSending(false);
+    }
+  };
+
+  const handleConfirmCancelSlip = async () => {
+    if (!slip) return;
+    try {
+      await cancelPatientToken(slip.token);
+      await sendCancellationEmail({
+        token: slip.token,
+        date: formatDate(slip.generatedAt),
+        doctorName: slip.doctorName || slip.department.doctorName || 'Doctor on Duty',
+        patientName: slip.patientName,
+      });
+      setIsCancelled(true);
+      setShowCancelModal(false);
+    } catch {
+      alert('Unable to cancel slip. Please contact the helpdesk.');
+    }
   };
 
   const handleSpeakDirections = () => {
@@ -450,6 +507,16 @@ export function SlipPage() {
             className="p-3 bg-emerald-100 border border-emerald-400 text-emerald-950 rounded-xl text-sm font-bold text-center animate-fadeIn"
           >
             {t('slip.link_copied')}
+          </div>
+        )}
+
+        {/* Cancelled slip notice */}
+        {isCancelled && (
+          <div
+            role="alert"
+            className="p-4 bg-red-100 border-2 border-red-400 text-red-950 rounded-2xl text-sm font-bold text-center"
+          >
+            Slip #{slip?.token} has been cancelled. A cancellation confirmation was sent to your email.
           </div>
         )}
 
@@ -831,6 +898,28 @@ export function SlipPage() {
                   {t('slip.print_slip')}
                 </Button>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-[var(--color-border)]">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Mail size={16} />}
+                  onClick={() => setShowAttendantModal(true)}
+                  className="border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-800)] font-bold text-xs"
+                >
+                  Share with Attendant (Email)
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={<X size={16} />}
+                  onClick={() => setShowCancelModal(true)}
+                  className="border border-red-300 bg-red-50 text-red-800 hover:bg-red-100 font-bold text-xs"
+                >
+                  Cancel Visit Slip
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -957,6 +1046,136 @@ export function SlipPage() {
               <div className="pt-4 mt-2">
                 <Button variant="ghost" fullWidth onClick={() => setShowAmenitiesModal(false)}>
                   {t('common.close')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL 3: SHARE WITH ATTENDANT (EMAIL) ──────────────────── */}
+        {showAttendantModal && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="attendant-modal-title"
+            className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-3 sm:p-5"
+          >
+            <div className="bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl w-full max-w-md p-5 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)] mb-3">
+                <div className="flex items-center gap-2">
+                  <Mail size={22} className="text-[var(--color-primary-500)]" />
+                  <h3 id="attendant-modal-title" className="font-extrabold text-lg text-[var(--color-text)]">
+                    Share with Attendant
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAttendantModal(false)}
+                  className="btn btn-ghost btn-sm btn-icon rounded-full"
+                  aria-label={t('common.close')}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mb-4">
+                Share your OPD token with a family member or attendant so they can follow queue progress on your behalf.
+              </p>
+
+              {attendantFeedback && (
+                <div
+                  className={`p-3 mb-4 rounded-xl text-xs font-bold border ${
+                    attendantFeedback.includes('successfully')
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+                      : 'bg-red-50 text-red-900 border-red-300'
+                  }`}
+                >
+                  {attendantFeedback}
+                </div>
+              )}
+
+              <form onSubmit={handleShareWithAttendant} className="flex flex-col gap-3">
+                <Input
+                  id="attendant-email-input"
+                  type="email"
+                  label="Attendant's Email Address"
+                  placeholder="family@example.com"
+                  hint="They will receive queue status link and live updates until consultation completes."
+                  value={attendantEmail}
+                  onChange={(e) => setAttendantEmail(e.target.value.trim())}
+                  required
+                />
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowAttendantModal(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={attendantSending}
+                    icon={<Mail size={16} />}
+                    className="flex-1"
+                  >
+                    Send Token
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL 4: CANCEL OPD SLIP CONFIRMATION ───────────────────── */}
+        {showCancelModal && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-modal-title"
+            className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-3 sm:p-5"
+          >
+            <div className="bg-[var(--color-surface)] border-2 border-red-300 rounded-2xl w-full max-w-md p-5 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)] mb-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={22} className="text-red-600" />
+                  <h3 id="cancel-modal-title" className="font-extrabold text-lg text-red-900 dark:text-red-200">
+                    Cancel OPD Visit Slip?
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(false)}
+                  className="btn btn-ghost btn-sm btn-icon rounded-full"
+                  aria-label={t('common.close')}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p className="text-xs sm:text-sm text-[var(--color-text-muted)] mb-4">
+                Are you sure you want to cancel token <strong>{slip?.token}</strong>? Your queue slot will be released for other patients, and a cancellation confirmation email will be sent.
+              </p>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1"
+                >
+                  Keep Slip
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={handleConfirmCancelSlip}
+                  className="flex-1"
+                >
+                  Confirm Cancellation
                 </Button>
               </div>
             </div>

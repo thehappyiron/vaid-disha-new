@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   LogIn,
   UserX,
-  Phone,
+  Mail,
   KeyRound,
   ArrowRight,
   ShieldCheck,
@@ -12,6 +12,13 @@ import {
   FileText,
   Clock,
 } from 'lucide-react';
+import {
+  isValidEmail,
+  sendRegistrationCompleteEmail,
+  sendVerificationEmail,
+  verifyEmailOtp,
+} from '../../services/emailService';
+import { checkEmailRegistered } from '../../services/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
 import {
@@ -28,41 +35,80 @@ export function PatientStartPage() {
   const { loginAsPatientWithOtp, loginAsGuest } = useAuth();
 
   // Form states
+  const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [otpError, setOtpError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState(false);
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber || phoneNumber.trim().length < 10) {
       setPhoneError(t('demo.input_error_msg') || 'Please enter a valid 10-digit mobile number');
       return;
     }
+    if (!isValidEmail(email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
     setPhoneError('');
+    setEmailError('');
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      // Check if user already exists in Supabase or local store
+      const existing = await checkEmailRegistered(email);
+      if (existing) {
+        setIsExistingUser(true);
+        if (existing.name && !fullName.trim()) {
+          setFullName(existing.name);
+        }
+      } else {
+        setIsExistingUser(false);
+      }
+
+      await sendVerificationEmail(email, existing?.name || fullName.trim() || 'Patient');
       setOtpSent(true);
-    }, 400);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Could not send the verification email.';
+      if (msg.toLowerCase().includes('failed to fetch')) {
+        setEmailError('Unable to reach email service. Please try again.');
+      } else {
+        setEmailError(msg);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode || otpCode.trim().length !== 4) {
-      setOtpError('Please enter any 4-digit OTP code');
+    if (!otpCode || otpCode.trim().length !== 6) {
+      setOtpError('Please enter the 6-digit code from your email');
       return;
     }
     setOtpError('');
     setSubmitting(true);
     try {
-      await loginAsPatientWithOtp(phoneNumber, otpCode);
-      // Navigate to patient visit flow
+      await verifyEmailOtp(email, otpCode);
+      const effectiveName = fullName.trim() || 'Patient';
+      const profile = await loginAsPatientWithOtp(phoneNumber, otpCode, email, effectiveName);
+      
+      // Only send registration complete email for newly registered users
+      if (!isExistingUser) {
+        await sendRegistrationCompleteEmail({
+          email,
+          patientName: profile.name || effectiveName,
+          patientId: profile.id,
+        });
+      }
       navigate('/patient/visit');
-    } catch {
-      setOtpError('Verification failed. Please try again.');
+    } catch (error) {
+      setOtpError(error instanceof Error ? error.message : 'Verification failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -112,7 +158,7 @@ export function PatientStartPage() {
           icon={<LogIn size={24} aria-hidden="true" />}
           iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-500)]"
           title={t('patient_entry.login_tab')}
-          description="Quick sign-in with Mobile Number & OTP"
+          description="Quick sign-in with mobile number, email, and a verification code"
           badge={
             <StatusBadge
               variant="info"
@@ -124,10 +170,19 @@ export function PatientStartPage() {
           {!otpSent ? (
             <form onSubmit={handleSendOtp} className="flex flex-col gap-4 mt-2">
               <Input
+                id="patient-name"
+                label={t('patient_entry.name_label', 'Full Name')}
+                placeholder={t('patient_entry.name_placeholder', 'Enter your full name (e.g. Ramesh Sharma)')}
+                type="text"
+                autoComplete="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+
+              <Input
                 id="patient-phone"
                 label={t('patient_entry.phone_label')}
                 placeholder={t('patient_entry.phone_placeholder')}
-                hint="We will send a 4-digit verification code"
                 type="tel"
                 maxLength={10}
                 value={phoneNumber}
@@ -139,12 +194,28 @@ export function PatientStartPage() {
                 required
               />
 
+              <Input
+                id="patient-email"
+                label={t('patient_entry.email_label')}
+                placeholder={t('patient_entry.email_placeholder')}
+                hint={t('patient_entry.email_hint')}
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value.trim());
+                  setEmailError('');
+                }}
+                error={emailError}
+                required
+              />
+
               <Button
                 type="submit"
                 variant="primary"
                 fullWidth
                 loading={submitting}
-                icon={<Phone size={18} />}
+                icon={<Mail size={18} />}
               >
                 {t('patient_entry.send_otp')}
               </Button>
@@ -153,13 +224,14 @@ export function PatientStartPage() {
             <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4 mt-2">
               <div className="p-3 bg-[var(--color-surface-2)] rounded-lg text-sm text-[var(--color-text)] flex justify-between items-center">
                 <span>
-                  Sent code to: <strong>+91 {phoneNumber}</strong>
+                  Sent code to: <strong>{email}</strong> ({`+91 ${phoneNumber}`})
                 </span>
                 <button
                   type="button"
                   onClick={() => {
                     setOtpSent(false);
                     setOtpCode('');
+                    setOtpError('');
                   }}
                   className="text-xs font-bold text-[var(--color-primary-500)] underline"
                 >
@@ -167,17 +239,31 @@ export function PatientStartPage() {
                 </button>
               </div>
 
-              {/* Dev Mode Hint */}
-              <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-md text-xs text-amber-900 font-medium flex items-center gap-1.5">
-                <span className="font-bold text-amber-700">💡 {t('patient_entry.otp_hint')}</span>
-              </div>
+              {isExistingUser ? (
+                <div className="p-3.5 bg-amber-50 border-2 border-amber-300 rounded-xl text-xs sm:text-sm text-amber-950 font-semibold flex items-center gap-2.5 shadow-xs">
+                  <span className="text-lg shrink-0">⚠️</span>
+                  <span>
+                    {t(
+                      'patient_entry.user_exists_otp_notice',
+                      'User already exists. Please enter the OTP sent to your email.'
+                    )}
+                  </span>
+                </div>
+              ) : (
+                <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-900 font-medium flex items-center gap-1.5">
+                  <span className="font-bold text-blue-700">
+                    💡 {t('patient_entry.otp_hint', 'Enter the 6-digit verification code sent to your email')}
+                  </span>
+                </div>
+              )}
 
               <Input
                 id="patient-otp"
                 label={t('patient_entry.otp_label')}
                 placeholder={t('patient_entry.otp_placeholder')}
                 type="text"
-                maxLength={4}
+                inputMode="numeric"
+                maxLength={6}
                 autoFocus
                 value={otpCode}
                 onChange={(e) => {

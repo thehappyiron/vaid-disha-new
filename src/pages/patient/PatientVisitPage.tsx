@@ -43,6 +43,7 @@ import {
   suggestDepartmentFromSymptoms,
   type SymptomMatchResult,
 } from '../../services/hospitalService';
+import { syncSlipToSupabase } from '../../services/supabaseClient';
 import type {
   Department,
   PatientVisitData,
@@ -73,7 +74,7 @@ function speakText(text: string, langCode: string, onEnd?: () => void) {
 export function PatientVisitPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUserProfile } = useAuth();
 
   // All departments from mock service
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -90,6 +91,7 @@ export function PatientVisitPage() {
       purposeId: 'consultation',
       departmentId: 'opd-general',
       symptoms: '',
+      email: isRegistered && user?.email ? user.email : '',
     };
   });
 
@@ -272,7 +274,11 @@ export function PatientVisitPage() {
   const handleGenerateSlip = async () => {
     try {
       setGenerating(true);
+      if (visitData.patientName?.trim() && (!user?.name || user.name === 'Patient' || user.name === 'Registered Patient')) {
+        updateUserProfile({ name: visitData.patientName.trim() });
+      }
       const slip = await generateSlip(visitData);
+      syncSlipToSupabase(slip);
       navigate(`/patient/slip/${slip.id}`, { state: { slip } });
     } catch {
       alert('Unable to generate slip. Please try again.');
@@ -450,6 +456,18 @@ export function PatientVisitPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Email Address for OPD Slip & Live Queue Notifications */}
+                <Input
+                  id="visit-patient-email"
+                  type="email"
+                  label={t('patient_entry.email_label') || 'Email Address'}
+                  placeholder={t('patient_entry.email_placeholder') || 'Enter your email'}
+                  hint="We will send your OPD slip confirmation, live queue alerts, and visit reminders to this email."
+                  value={visitData.email || ''}
+                  onChange={(e) => setVisitData({ ...visitData, email: e.target.value.trim() })}
+                  required={false}
+                />
               </form>
             </Card>
           </section>
@@ -886,6 +904,7 @@ export function PatientVisitPage() {
                       {visitData.patientGender
                         ? t(`patient_visit.gender_${visitData.patientGender}`)
                         : 'Gender: Not specified'}
+                      {visitData.email ? ` • ${visitData.email}` : ''}
                     </p>
                   </div>
                 }

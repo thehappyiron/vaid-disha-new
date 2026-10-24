@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,8 +12,10 @@ import {
   Ticket,
   Stethoscope,
   CheckCircle2,
+  Edit2,
+  Check,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, deriveNameFromEmail } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
 import {
   PageHeader,
@@ -23,23 +25,68 @@ import {
   OptionCard,
 } from '../../components/ui';
 import { getPatientSlipHistory } from '../../services/hospitalService';
+import {
+  fetchSupabaseSlips,
+  fetchSupabaseVisits,
+  fetchSupabaseReports,
+} from '../../services/supabaseClient';
 import type { Slip, VisitRecord, MedicalReport } from '../../types';
 
 export function PatientHistoryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, updateUserProfile } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'slips' | 'reports'>('slips');
   const [slips, setSlips] = useState<Slip[]>([]);
+  const [cloudVisits, setCloudVisits] = useState<VisitRecord[]>([]);
+  const [cloudReports, setCloudReports] = useState<MedicalReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+
+  // Determine authentic patient name
+  const authenticatedName = useMemo(() => {
+    if (user?.name && user.name !== 'Patient' && user.name !== 'Registered Patient') {
+      return user.name;
+    }
+    const slipWithName = slips.find((s) => s.patientName && s.patientName !== 'Patient');
+    if (slipWithName?.patientName) return slipWithName.patientName;
+    if (user?.email) {
+      const derived = deriveNameFromEmail(user.email);
+      if (derived && derived !== 'Registered Patient') return derived;
+    }
+    return user?.name || 'Registered Patient';
+  }, [user, slips]);
+
+  // Synchronize authenticated name if user profile was generic
+  useEffect(() => {
+    if (user && user.name === 'Patient' && authenticatedName && authenticatedName !== 'Patient') {
+      updateUserProfile({ name: authenticatedName });
+    }
+  }, [user, authenticatedName, updateUserProfile]);
 
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const data = await getPatientSlipHistory(user?.id);
-        setSlips(data);
+        const [localSlips, cloudSlips] = await Promise.all([
+          getPatientSlipHistory(user?.id),
+          fetchSupabaseSlips(user?.id),
+        ]);
+        const slipMap = new Map<string, Slip>();
+        for (const s of cloudSlips) slipMap.set(s.token || s.id, s);
+        for (const s of localSlips) slipMap.set(s.token || s.id, s);
+        setSlips(Array.from(slipMap.values()));
+
+        if (user?.id) {
+          const [vData, rData] = await Promise.all([
+            fetchSupabaseVisits(user.id),
+            fetchSupabaseReports(user.id),
+          ]);
+          if (vData.length > 0) setCloudVisits(vData);
+          if (rData.length > 0) setCloudReports(rData);
+        }
       } catch (err) {
         console.warn('Failed to load history', err);
       } finally {
@@ -49,9 +96,9 @@ export function PatientHistoryPage() {
     loadData();
   }, [user]);
 
-  // Combine user mock visits if registered
-  const pastVisits: VisitRecord[] = user?.visits || [];
-  const reports: MedicalReport[] = user?.reports || [];
+  // Combine user visits & reports
+  const pastVisits: VisitRecord[] = cloudVisits.length > 0 ? cloudVisits : (user?.visits || []);
+  const reports: MedicalReport[] = cloudReports.length > 0 ? cloudReports : (user?.reports || []);
 
   return (
     <BaseLayout showHome={true} headerTitle={t('app.name')}>
@@ -89,20 +136,81 @@ export function PatientHistoryPage() {
 
         {/* ── REGISTERED USER PROFILE BANNER ──────────────────────────── */}
         {!isGuest && user && (
-          <OptionCard
-            as="div"
-            icon={<User size={24} aria-hidden="true" />}
-            iconBgClass="bg-[var(--color-primary-500)] text-white shadow-sm font-bold text-lg"
-            title={user.name}
-            description={`Phone: ${user.phone || '9876543210'} • ABHA: ${user.abhaId || '12-3456-7890-1234'}`}
-            badge={
+          <div className="bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-500)] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
+                  <User size={24} aria-hidden="true" />
+                </div>
+                <div>
+                  {isEditingName ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (nameInput.trim()) {
+                          updateUserProfile({ name: nameInput.trim() });
+                          setIsEditingName(false);
+                        }
+                      }}
+                      className="flex items-center gap-2 mt-0.5"
+                    >
+                      <input
+                        type="text"
+                        value={nameInput}
+                        onChange={(e) => setNameInput(e.target.value)}
+                        placeholder="Enter your name"
+                        className="px-2.5 py-1 text-base font-black rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
+                        autoFocus
+                      />
+                      <button
+                        type="submit"
+                        className="p-1.5 rounded-lg bg-[var(--color-primary-500)] text-white hover:brightness-110"
+                        title="Save name"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNameInput(authenticatedName);
+                          setIsEditingName(false);
+                        }}
+                        className="p-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-[var(--color-text-muted)] hover:brightness-110 text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-black text-xl text-[var(--color-text)] tracking-tight">
+                        {authenticatedName}
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNameInput(authenticatedName);
+                          setIsEditingName(true);
+                        }}
+                        className="p-1 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-surface-2)] transition-colors"
+                        title="Edit name"
+                        aria-label="Edit name"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-xs sm:text-sm font-semibold text-[var(--color-text-muted)] mt-1">
+                    Phone: {user.phone || '1234567890'} {user.email ? `• ${user.email}` : ''} • ABHA: {user.abhaId || '12-3456-7890-1234'}
+                  </p>
+                </div>
+              </div>
               <StatusBadge
                 variant="success"
                 icon={<CheckCircle2 size={13} />}
-                label={t('slip.registered_badge')}
+                label={t('slip.registered_badge', 'Registered')}
               />
-            }
-          />
+            </div>
+          </div>
         )}
 
         {/* ── TAB SELECTOR (Registered Only) ─────────────────────────── */}

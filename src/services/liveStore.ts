@@ -29,6 +29,7 @@ export interface QueueEntry {
   isElderly?: boolean;
   isEmergency?: boolean;
   scheduledTime?: string;
+  email?: string;
 }
 
 export interface DepartmentLiveStatus {
@@ -582,6 +583,26 @@ function notifySubscribers() {
 }
 
 /** Commit state to memory, localStorage, and broadcast across tabs */
+function deptMailContext(dept: DepartmentLiveStatus) {
+  return {
+    departmentName: dept.departmentName,
+    roomNumber: dept.roomNumber,
+    floor: dept.floor,
+    doctorName: dept.activeDoctorName,
+    delayMinutes: dept.delayMinutes,
+  };
+}
+
+function fireQueueActivityEmails(previousQueue: QueueEntry[], departmentId: string) {
+  const dept = memoryState.departments[departmentId];
+  if (!dept) return;
+  const prev = previousQueue.filter((q) => q.departmentId === departmentId);
+  const next = memoryState.queue.filter((q) => q.departmentId === departmentId);
+  void import('./emailService').then((mail) => {
+    mail.notifyTurnApproachingAndNow(prev, next, deptMailContext(dept));
+  });
+}
+
 function commitState(newState: LiveStoreState) {
   newState.lastUpdated = new Date().toISOString();
   memoryState = newState;
@@ -748,6 +769,10 @@ export async function ensurePatientInQueue(params: {
   patientName: string;
   departmentId: string;
   roomNumber?: string;
+  email?: string;
+  age?: number;
+  accessibilityNeeds?: string[];
+  isEmergency?: boolean;
 }): Promise<QueueEntry> {
   const existing = memoryState.queue.find(
     (q) => q.token.toUpperCase() === params.token.toUpperCase()
@@ -756,13 +781,19 @@ export async function ensurePatientInQueue(params: {
     return existing;
   }
 
+  const previousQueue = memoryState.queue;
   const dept = memoryState.departments[params.departmentId];
   const waitPerPatient = dept ? dept.estimatedWaitPerPatientMinutes : 10;
   const currentWaitingCount = memoryState.queue.filter(
     (q) => q.departmentId === params.departmentId && (q.status === 'waiting' || q.status === 'turn_soon')
   ).length;
 
-  const newPosition = currentWaitingCount + 1;
+  const isPriority =
+    Boolean(params.isEmergency) ||
+    (typeof params.age === 'number' && params.age >= 65) ||
+    Boolean(params.accessibilityNeeds && params.accessibilityNeeds.filter((n) => n !== 'none').length > 0);
+
+  const newPosition = isPriority ? 1 : currentWaitingCount + 1;
   const newEntry: QueueEntry = {
     id: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     token: params.token,
@@ -773,17 +804,35 @@ export async function ensurePatientInQueue(params: {
     position: newPosition,
     estimatedWaitMinutes: newPosition * waitPerPatient,
     createdAt: new Date().toISOString(),
+    email: params.email,
+    age: params.age,
+    accessibilityNeeds: params.accessibilityNeeds,
+    isEmergency: params.isEmergency,
+    isElderly: typeof params.age === 'number' ? params.age >= 65 : undefined,
   };
+
+  const withoutDeptWaiting = memoryState.queue.filter(
+    (q) => q.departmentId !== params.departmentId || (q.status !== 'waiting' && q.status !== 'turn_soon')
+  );
+  const deptWaiting = memoryState.queue.filter(
+    (q) => q.departmentId === params.departmentId && (q.status === 'waiting' || q.status === 'turn_soon')
+  );
+  const inserted = isPriority ? [newEntry, ...deptWaiting] : [...deptWaiting, newEntry];
 
   let nextState: LiveStoreState = {
     ...memoryState,
-    queue: [...memoryState.queue, newEntry],
+    queue: [...withoutDeptWaiting, ...inserted],
   };
 
   nextState = recomputeDepartmentQueue(nextState, params.departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, params.departmentId);
 
-  return nextState.queue.find((q) => q.token === params.token) || newEntry;
+  const saved = nextState.queue.find((q) => q.token === params.token) || newEntry;
+  if (isPriority) {
+    void import('./emailService').then((mail) => mail.notifyPriorityApplied(saved));
+  }
+  return saved;
 }
 
 /** Add multiple random walk-in guest patients to the live queue */
@@ -880,6 +929,23 @@ export async function updateDepartmentStatus(
   nextState = recomputeDepartmentQueue(nextState, departmentId);
   commitState(nextState);
 
+  const waiting = memoryState.queue.filter((q) => q.departmentId === departmentId);
+  void import('./emailService').then((mail) => {
+    if (updates.activeDoctorName && current.activeDoctorName !== updatedDept.activeDoctorName) {
+      mail.notifyDoctorChange(waiting, deptMailContext(updatedDept), current.activeDoctorName);
+    }
+    if (updates.roomNumber && current.roomNumber !== updatedDept.roomNumber) {
+      mail.notifyRoomChange(waiting, deptMailContext(updatedDept), current.roomNumber);
+    }
+    if (
+      updatedDept.statusCode === 'delayed' &&
+      (updatedDept.delayMinutes || 0) >= 20 &&
+      (current.delayMinutes !== updatedDept.delayMinutes || current.statusCode !== 'delayed')
+    ) {
+      mail.notifyDepartmentDelay(waiting, deptMailContext(updatedDept));
+    }
+  });
+
   return updatedDept;
 }
 
@@ -914,6 +980,7 @@ export async function setDepartmentCustomStatus(
 export async function callNextPatient(
   departmentId: string
 ): Promise<{ completedToken: string | null; nextToken: string | null }> {
+  const previousQueue = memoryState.queue;
   const dept = memoryState.departments[departmentId];
   const currentToken = dept?.currentToken || null;
 
@@ -979,6 +1046,7 @@ export async function callNextPatient(
 
   nextState = recomputeDepartmentQueue(nextState, departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, departmentId);
 
   // Trigger notification if consultation completed
   if (currentToken) {
@@ -991,6 +1059,13 @@ export async function callNextPatient(
       token: currentToken,
       departmentId,
     });
+    const completedEntry = previousQueue.find((q) => q.token === currentToken);
+    const liveDept = memoryState.departments[departmentId];
+    if (completedEntry && liveDept) {
+      void import('./emailService').then((mail) =>
+        mail.notifyVisitCompleted(completedEntry, deptMailContext(liveDept))
+      );
+    }
   }
 
   // Trigger notification if a waiting patient is now next in line (turn_soon)
@@ -1025,6 +1100,7 @@ export async function updateQueueEntryStatus(
 ): Promise<QueueEntry | null> {
   const entry = memoryState.queue.find((q) => q.token.toUpperCase() === token.toUpperCase());
   if (!entry) return null;
+  const previousQueue = memoryState.queue;
 
   const updatedQueue = memoryState.queue.map((q) => {
     if (q.token.toUpperCase() === token.toUpperCase()) {
@@ -1045,6 +1121,7 @@ export async function updateQueueEntryStatus(
 
   nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, entry.departmentId);
 
   // Trigger relevant notification on status update
   if (status === 'completed') {
@@ -1057,6 +1134,12 @@ export async function updateQueueEntryStatus(
       token,
       departmentId: entry.departmentId,
     });
+    const liveDept = memoryState.departments[entry.departmentId];
+    if (liveDept) {
+      void import('./emailService').then((mail) =>
+        mail.notifyVisitCompleted(entry, deptMailContext(liveDept))
+      );
+    }
   } else if (status === 'turn_soon') {
     addNotification({
       type: 'turn_soon',
@@ -1077,6 +1160,7 @@ export async function startPatientConsultation(token: string): Promise<void> {
   const norm = token.toUpperCase();
   const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
   if (!entry) return;
+  const previousQueue = memoryState.queue;
 
   const dept = memoryState.departments[entry.departmentId];
   const prevCurrentToken = dept?.currentToken;
@@ -1136,6 +1220,7 @@ export async function startPatientConsultation(token: string): Promise<void> {
 
   nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, entry.departmentId);
 
   // Send completed notification for previous patient if any
   if (prevCurrentToken && prevCurrentToken.toUpperCase() !== norm) {
@@ -1148,6 +1233,13 @@ export async function startPatientConsultation(token: string): Promise<void> {
       token: prevCurrentToken,
       departmentId: entry.departmentId,
     });
+    const prevEntry = previousQueue.find((q) => q.token.toUpperCase() === prevCurrentToken.toUpperCase());
+    const liveDept = memoryState.departments[entry.departmentId];
+    if (prevEntry && liveDept) {
+      void import('./emailService').then((mail) =>
+        mail.notifyVisitCompleted(prevEntry, deptMailContext(liveDept))
+      );
+    }
   }
 }
 
@@ -1156,6 +1248,7 @@ export async function completePatientConsultation(token: string): Promise<void> 
   const norm = token.toUpperCase();
   const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
   if (!entry) return;
+  const previousQueue = memoryState.queue;
 
   const dept = memoryState.departments[entry.departmentId];
   const isCurrentToken = dept?.currentToken?.toUpperCase() === norm;
@@ -1200,6 +1293,7 @@ export async function completePatientConsultation(token: string): Promise<void> 
 
   nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, entry.departmentId);
 
   // Trigger patient completion notification
   addNotification({
@@ -1211,6 +1305,12 @@ export async function completePatientConsultation(token: string): Promise<void> 
     token: entry.token,
     departmentId: entry.departmentId,
   });
+  const liveDept = memoryState.departments[entry.departmentId];
+  if (liveDept) {
+    void import('./emailService').then((mail) =>
+      mail.notifyVisitCompleted(entry, deptMailContext(liveDept))
+    );
+  }
 }
 
 /** Postpone a patient in the queue */
@@ -1218,6 +1318,7 @@ export async function postponePatient(token: string, spotsDown: number = 2): Pro
   const norm = token.toUpperCase();
   const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
   if (!entry || entry.status === 'in_progress' || entry.status === 'completed') return;
+  const previousQueue = memoryState.queue;
 
   const deptWaiting = memoryState.queue.filter(
     (q) => q.departmentId === entry.departmentId && (q.status === 'waiting' || q.status === 'turn_soon')
@@ -1242,6 +1343,7 @@ export async function postponePatient(token: string, spotsDown: number = 2): Pro
 
   nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, entry.departmentId);
 }
 
 /** Move a patient up or down by 1 in the waiting queue */
@@ -1249,6 +1351,7 @@ export async function movePatientQueue(token: string, direction: 'up' | 'down'):
   const norm = token.toUpperCase();
   const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
   if (!entry || entry.status === 'in_progress' || entry.status === 'completed') return;
+  const previousQueue = memoryState.queue;
 
   const deptWaiting = memoryState.queue.filter(
     (q) => q.departmentId === entry.departmentId && (q.status === 'waiting' || q.status === 'turn_soon')
@@ -1276,6 +1379,121 @@ export async function movePatientQueue(token: string, direction: 'up' | 'down'):
 
   nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
   commitState(nextState);
+  fireQueueActivityEmails(previousQueue, entry.departmentId);
+  if (direction === 'up') {
+    const moved = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
+    if (moved) {
+      void import('./emailService').then((mail) => mail.notifyPriorityApplied(moved));
+    }
+  }
+}
+
+/** Mark a called patient as not present and keep the slip valid */
+export async function markPatientMissed(token: string): Promise<void> {
+  const norm = token.toUpperCase();
+  const entry = memoryState.queue.find((q) => q.token.toUpperCase() === norm);
+  if (!entry || entry.status !== 'in_progress') return;
+  const previousQueue = memoryState.queue;
+  const dept = memoryState.departments[entry.departmentId];
+  const calledAt = entry.calledAt;
+
+  const waiting = memoryState.queue.filter(
+    (q) =>
+      q.departmentId === entry.departmentId &&
+      (q.status === 'waiting' || q.status === 'turn_soon') &&
+      q.token.toUpperCase() !== norm
+  );
+  const nextPatient = waiting[0];
+  const others = memoryState.queue.filter(
+    (q) => q.departmentId !== entry.departmentId && q.token.toUpperCase() !== norm
+  );
+
+  const missedEntry: QueueEntry = {
+    ...entry,
+    status: 'waiting',
+    position: 2,
+  };
+
+  const startedNext = nextPatient
+    ? {
+        ...nextPatient,
+        status: 'in_progress' as QueueStatus,
+        position: 0,
+        estimatedWaitMinutes: 0,
+        calledAt: new Date().toISOString(),
+      }
+    : null;
+
+  const remainingWaiting = nextPatient ? waiting.slice(1) : waiting;
+
+  let nextState: LiveStoreState = {
+    ...memoryState,
+    queue: [
+      ...others.filter((q) => q.departmentId !== entry.departmentId),
+      ...memoryState.queue.filter(
+        (q) =>
+          q.departmentId === entry.departmentId &&
+          q.status !== 'waiting' &&
+          q.status !== 'turn_soon' &&
+          q.status !== 'in_progress'
+      ),
+      ...(startedNext ? [startedNext] : []),
+      missedEntry,
+      ...remainingWaiting,
+    ],
+    departments: dept
+      ? {
+          ...memoryState.departments,
+          [entry.departmentId]: {
+            ...dept,
+            currentToken: startedNext ? startedNext.token : null,
+            statusMessage: startedNext ? 'Doctor with another patient' : 'Consultations running on time',
+            statusCode: startedNext ? 'busy' : 'normal',
+            lastUpdated: new Date().toISOString(),
+          },
+        }
+      : memoryState.departments,
+  };
+
+  nextState = recomputeDepartmentQueue(nextState, entry.departmentId);
+  commitState(nextState);
+  fireQueueActivityEmails(previousQueue, entry.departmentId);
+  if (dept) {
+    void import('./emailService').then((mail) =>
+      mail.notifyMissedTurn(entry, deptMailContext(dept), calledAt)
+    );
+  }
+}
+
+/** Route a patient to lab, X-ray, or pharmacy during the visit */
+export async function routePatientOnward(
+  token: string,
+  locationName: string
+): Promise<void> {
+  const entry = memoryState.queue.find((q) => q.token.toUpperCase() === token.toUpperCase());
+  if (!entry) return;
+  const dept = memoryState.departments[entry.departmentId];
+  const floor =
+    /lab|pathology/i.test(locationName)
+      ? 'Basement'
+      : /x-ray|radiology|scan/i.test(locationName)
+        ? 'Floor 1'
+        : 'Ground Floor';
+  void import('./emailService').then((mail) =>
+    mail.notifyNextStep(
+      entry,
+      locationName,
+      floor,
+      dept?.activeDoctorName || 'your doctor',
+      12
+    )
+  );
+}
+
+/** Cancel a token and keep a record of the cancellation */
+export async function cancelPatientToken(token: string): Promise<QueueEntry | null> {
+  const updated = await updateQueueEntryStatus(token, 'cancelled');
+  return updated;
 }
 
 /** Acknowledge an emergency alert */
@@ -1290,7 +1508,14 @@ export async function acknowledgeEmergencyAlert(alertIdOrReqId: string): Promise
 }
 
 /** Mark emergency alert as attended / resolved */
-export async function resolveEmergencyAlert(alertIdOrReqId: string): Promise<void> {
+export async function resolveEmergencyAlert(
+  alertIdOrReqId: string,
+  actionTaken: string = 'provided emergency medical triage and stabilization'
+): Promise<void> {
+  const targetReq = (memoryState.emergencyRequests || []).find(
+    (req) => req.id === alertIdOrReqId || alertIdOrReqId.includes(req.id)
+  );
+
   const nextState: LiveStoreState = {
     ...memoryState,
     emergencyRequests: (memoryState.emergencyRequests || []).map((req) =>
@@ -1301,6 +1526,16 @@ export async function resolveEmergencyAlert(alertIdOrReqId: string): Promise<voi
     ),
   };
   commitState(nextState);
+
+  if (targetReq) {
+    void import('./emailService').then((mail) =>
+      mail.notifyUrgentClosed({
+        token: targetReq.patientToken,
+        patientName: targetReq.patientName,
+        actionTaken,
+      })
+    );
+  }
 }
 
 /** Publish a live hospital alert (emergency, delay, announcement) */
@@ -1552,8 +1787,17 @@ export function useLiveStore() {
   const completeConsult = useCallback((token: string) => completePatientConsultation(token), []);
   const postpone = useCallback((token: string, spots?: number) => postponePatient(token, spots), []);
   const moveQueue = useCallback((token: string, dir: 'up' | 'down') => movePatientQueue(token, dir), []);
+  const markMissed = useCallback((token: string) => markPatientMissed(token), []);
+  const routeOnward = useCallback(
+    (token: string, loc: string) => routePatientOnward(token, loc),
+    []
+  );
+  const cancelToken = useCallback((token: string) => cancelPatientToken(token), []);
   const ackEmergency = useCallback((id: string) => acknowledgeEmergencyAlert(id), []);
-  const resEmergency = useCallback((id: string) => resolveEmergencyAlert(id), []);
+  const resEmergency = useCallback(
+    (id: string, action?: string) => resolveEmergencyAlert(id, action),
+    []
+  );
 
   const reset = useCallback(() => resetLiveStore(), []);
 
@@ -1568,6 +1812,9 @@ export function useLiveStore() {
     completePatientConsultation: completeConsult,
     postponePatient: postpone,
     movePatientQueue: moveQueue,
+    markPatientMissed: markMissed,
+    routePatientOnward: routeOnward,
+    cancelPatientToken: cancelToken,
     acknowledgeEmergencyAlert: ackEmergency,
     resolveEmergencyAlert: resEmergency,
     publishLiveAlert: publishAlert,

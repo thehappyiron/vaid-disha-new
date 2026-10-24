@@ -10,6 +10,7 @@ import {
   Printer,
   Download,
   Info,
+  Mail,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
 import { PageHeader } from '../../components/ui';
@@ -798,6 +799,26 @@ export function StaffPatientsPage() {
                               >
                                 <Download size={14} />
                                 <span>Download PDF</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void import('../../services/emailService').then((mail) => {
+                                    mail.notifyReportsReady({
+                                      token: selectedPatient.token || 'CARD-102',
+                                      patientName: selectedPatient.name,
+                                      doctorName: selectedPatient.currentDoctor || 'Dr. Sharma',
+                                      room: 'Room 204',
+                                      floor: 'Floor 2',
+                                      minutes: 10,
+                                    });
+                                    alert(`Email notification sent to ${selectedPatient.name}: Reports ready to return to ${selectedPatient.currentDoctor || 'the doctor'}.`);
+                                  });
+                                }}
+                                className="btn btn-primary btn-sm px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 ml-auto bg-[var(--color-primary-500)] text-white hover:brightness-105"
+                              >
+                                <Mail size={14} />
+                                <span>Notify Patient (Email)</span>
                               </button>
                             </div>
                           </div>

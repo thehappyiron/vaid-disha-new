@@ -14,6 +14,7 @@ import {
   SYMPTOM_DEPARTMENT_RULES,
 } from '../data/hospitalData';
 import { ensurePatientInQueue } from './liveStore';
+import { syncSlipToSupabase, syncVisitToSupabase } from './supabaseClient';
 
 // ─── Utility ─────────────────────────────────────────────────────────────────
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -289,6 +290,7 @@ export async function generateSlip(
   let patientAge: number | undefined;
   let patientGender: string | undefined;
   let accessibilityNeeds: PatientVisitData['accessibilityNeeds'] = [];
+  let patientEmail: string | undefined;
 
   if (typeof visitDataOrPurposeId === 'string') {
     const purpose = PURPOSE_OPTIONS.find((p) => p.id === visitDataOrPurposeId);
@@ -301,6 +303,7 @@ export async function generateSlip(
     patientGender = v.patientGender;
     accessibilityNeeds = v.accessibilityNeeds || [];
     departmentId = v.departmentId || 'opd-general';
+    patientEmail = v.email;
 
     const purposeMap: Record<string, string> = {
       consultation: 'purpose.new_opd',
@@ -382,6 +385,7 @@ export async function generateSlip(
     accessibilityNeeds,
     isGuest,
     userId: authUser?.id,
+    patientEmail: patientEmail || authUser?.email,
     additionalNoteKey: department.category === 'emergency' ? 'slip.note_emergency' : undefined,
   };
 
@@ -407,6 +411,7 @@ export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
       ...slip,
       isGuest: determinedIsGuest,
       userId: authUser?.id,
+      patientEmail: slip.patientEmail || authUser?.email,
     };
 
     const existingIndex = list.findIndex((s) => s.id === slip.id);
@@ -419,6 +424,9 @@ export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
     localStorage.setItem(SLIPS_STORAGE_KEY, JSON.stringify(list));
     localStorage.setItem(LATEST_SLIP_KEY, JSON.stringify(enrichedSlip));
 
+    // Persist slip to Supabase cloud database
+    syncSlipToSupabase(enrichedSlip);
+
     // Register into reactive live queue store
     if (enrichedSlip.token && enrichedSlip.department?.id) {
       ensurePatientInQueue({
@@ -426,7 +434,45 @@ export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
         patientName: enrichedSlip.patientName || 'Patient',
         departmentId: enrichedSlip.department.id,
         roomNumber: enrichedSlip.roomNumber || enrichedSlip.department.roomNumbers?.[0],
+        email: enrichedSlip.patientEmail,
       }).catch((e) => console.warn('Failed to register slip in liveStore', e));
+    }
+
+    // Trigger OPD Slip confirmation email & schedule visit reminders
+    const recipientEmail = enrichedSlip.patientEmail || authUser?.email;
+    if (recipientEmail && enrichedSlip.token) {
+      void import('./emailService').then((mail) => {
+        const genDate = new Date(enrichedSlip.generatedAt);
+        const etaStart = new Date(genDate.getTime() + (enrichedSlip.estimatedWait || 15) * 60 * 1000);
+        const etaEnd = new Date(etaStart.getTime() + 15 * 60 * 1000);
+        const deptLabel = enrichedSlip.department?.nameKey || 'General Consultation';
+        const docLabel = enrichedSlip.doctorName || enrichedSlip.department?.doctorName || 'Doctor on Duty';
+
+        void mail.sendOpdSlipEmail({
+          email: recipientEmail,
+          patientName: enrichedSlip.patientName || 'Patient',
+          token: enrichedSlip.token,
+          department: deptLabel,
+          doctorName: docLabel,
+          room: enrichedSlip.roomNumber || 'Room 101',
+          floor: mail.formatFloor(enrichedSlip.floor),
+          date: mail.formatDate(genDate),
+          etaStart: mail.formatClock(etaStart),
+          etaEnd: mail.formatClock(etaEnd),
+          routeText: enrichedSlip.humanReadableDirection || 'Follow hospital OPD wayfinding signs.',
+          slipId: enrichedSlip.id,
+        });
+
+        mail.scheduleVisitReminders({
+          token: enrichedSlip.token,
+          email: recipientEmail,
+          patientName: enrichedSlip.patientName || 'Patient',
+          department: deptLabel,
+          doctorName: docLabel,
+          expectedAt: etaStart,
+          slipId: enrichedSlip.id,
+        });
+      });
     }
 
     // If registered user, also append to visits in authUser
@@ -434,19 +480,20 @@ export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
       const existingVisits = authUser.visits || [];
       const hasVisit = existingVisits.some((v: any) => v.id === slip.id || v.tokenNumber === slip.token);
       if (!hasVisit) {
-        authUser.visits = [
-          {
-            id: slip.id,
-            date: new Date(slip.generatedAt).toISOString().split('T')[0],
-            departmentName: slip.department.nameKey,
-            doctorName: slip.doctorName || slip.department.doctorName || 'Doctor on Duty',
-            tokenNumber: slip.token,
-            diagnosisSummary: `Outpatient consultation. Queue Token #${slip.token}. Room ${slip.roomNumber || slip.department.roomNumbers[0]}.`,
-            status: 'in_progress',
-          },
-          ...existingVisits,
-        ];
+        const newVisit = {
+          id: slip.id,
+          date: new Date(slip.generatedAt).toISOString().split('T')[0],
+          departmentName: slip.department.nameKey,
+          doctorName: slip.doctorName || slip.department.doctorName || 'Doctor on Duty',
+          tokenNumber: slip.token,
+          diagnosisSummary: `Outpatient consultation. Queue Token #${slip.token}. Room ${slip.roomNumber || slip.department.roomNumbers[0]}.`,
+          status: 'in_progress' as const,
+        };
+        authUser.visits = [newVisit, ...existingVisits];
         localStorage.setItem('vd-auth-user', JSON.stringify(authUser));
+        if (authUser.id) {
+          syncVisitToSupabase(newVisit, authUser.id);
+        }
       }
     }
 

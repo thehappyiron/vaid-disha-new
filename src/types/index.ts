@@ -48,6 +48,7 @@ export interface PatientVisitData {
   departmentId?: string;
   doctorName?: string;
   symptoms?: string;
+  email?: string;
 }
 
 export interface PurposeOption {
@@ -90,6 +91,7 @@ export interface Slip {
   accessibilityNeeds?: AccessibilityNeedId[];
   isGuest?: boolean;
   userId?: string;
+  patientEmail?: string;
 }
 
 export interface WayfindingResult {
@@ -132,6 +134,8 @@ export interface UserProfile {
   id: string;
   name: string;
   phone?: string;
+  email?: string;
+  emailVerified?: boolean;
   role: UserRole;
   isGuest: boolean;
   age?: number;

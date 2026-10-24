@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AccessibilityProvider } from './context/AccessibilityContext';
 import { AuthProvider } from './context/AuthContext';
+import { startEmailReminderScheduler } from './services/emailService';
 
 // Pages
 import { RoleSelectionPage } from './pages/RoleSelectionPage';
@@ -27,6 +29,10 @@ import { DevStorePage } from './pages/dev/DevStorePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export function App() {
+  useEffect(() => {
+    startEmailReminderScheduler();
+  }, []);
+
   return (
     <AccessibilityProvider>
       <AuthProvider>

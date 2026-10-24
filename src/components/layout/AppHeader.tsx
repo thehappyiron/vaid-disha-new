@@ -13,6 +13,7 @@ import {
   MapPin,
   ChevronRight,
   Home,
+  History,
 } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { AccessibilityPanel } from './AccessibilityPanel';
@@ -172,6 +173,28 @@ export function AppHeader({ showHome = false, title }: AppHeaderProps) {
                     </span>
                     <span className="text-xs font-medium text-[var(--color-text-muted)]">
                       Queue token, QR code & room details
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-[var(--color-text-muted)] group-hover:text-[var(--color-primary-500)]" />
+              </Link>
+
+              {/* View Previous Visits / History */}
+              <Link
+                to="/patient/history"
+                onClick={() => setMenuOpen(false)}
+                className="min-h-[56px] px-4 py-3 rounded-2xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-primary-500)] hover:bg-[var(--color-surface-2)] transition-all flex items-center justify-between gap-3 text-left group"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                    <History size={22} />
+                  </div>
+                  <div>
+                    <span className="font-black text-base text-[var(--color-text)] block">
+                      {t('history.page_title', 'My Visits & Slips')}
+                    </span>
+                    <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                      View previous visits & medical history
                     </span>
                   </div>
                 </div>

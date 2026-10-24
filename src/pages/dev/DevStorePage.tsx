@@ -16,9 +16,10 @@ import {
   Sparkles,
   Users,
   FileText,
+  Mail,
 } from 'lucide-react';
 import { BaseLayout } from '../../components/layout';
-import { Button, StatusBadge } from '../../components/ui';
+import { Button, StatusBadge, Input } from '../../components/ui';
 import {
   useLiveStore,
   useNotifications,
@@ -27,6 +28,11 @@ import {
   type DepartmentStatusCode,
   type QueueStatus,
 } from '../../services/liveStore';
+import {
+  sendActivityEmail,
+  sendVerificationEmail,
+  type ActivityEmailEvent,
+} from '../../services/emailService';
 
 export function DevStorePage() {
   const navigate = useNavigate();
@@ -49,10 +55,78 @@ export function DevStorePage() {
   const [customStatusCode, setCustomStatusCode] = useState<DepartmentStatusCode>('normal');
   const [newPatientName, setNewPatientName] = useState<string>('');
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+  const [testEmail, setTestEmail] = useState<string>('loheprasanna@gmail.com');
+  const [sendingEvent, setSendingEvent] = useState<string | null>(null);
+  const [emailStatus, setEmailStatus] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setFeedbackToast(msg);
     setTimeout(() => setFeedbackToast(null), 3000);
+  };
+
+  const handleTestEmailEvent = async (event: ActivityEmailEvent | 'email_verification', label: string) => {
+    setSendingEvent(event);
+    setEmailStatus(`Sending "${label}" to ${testEmail}...`);
+    try {
+      if (event === 'email_verification') {
+        const res = (await sendVerificationEmail(testEmail, 'Prasanna Lohe')) as { id?: string };
+        setEmailStatus(`Verification email dispatched to ${testEmail} via Resend (ID: ${res?.id || 'sent'})`);
+      } else {
+        const ok = await sendActivityEmail({
+          event,
+          to: testEmail,
+          token: 'CARD-1042',
+          idempotencyKey: `dev-test:${event}:${Date.now()}`,
+          vars: {
+            patient_name: 'Prasanna Lohe',
+            token_no: 'CARD-1042',
+            patient_id: 'PAT-88192',
+            department: 'Cardiology OPD',
+            doctor_name: 'Dr. Ramesh Sharma',
+            room: 'Room 204',
+            floor: 'Floor 2',
+            date: 'Today, 25 Oct',
+            arrival_time: '10:30 AM',
+            eta_start: '10:45 AM',
+            eta_end: '11:00 AM',
+            route_text: 'Take Staircase B to Floor 2, turn right to Room 204.',
+            status_link: `${window.location.origin}/patient/live?token=CARD-1042`,
+            cancel_link: `${window.location.origin}/patient/slip/latest?cancel=1`,
+            patients_ahead: 5,
+            minutes: 20,
+            route_link: `${window.location.origin}/patient/guidance`,
+            called_time: '10:42 AM',
+            grace_minutes: '15',
+            new_position: 1,
+            delay_minutes: 25,
+            reason_short: 'earlier consultations took longer than planned',
+            new_eta: '11:15 AM',
+            radius_minutes: '20',
+            old_doctor: 'Dr. Ramesh Sharma',
+            new_doctor: 'Dr. Sunita Kulkarni',
+            position: 2,
+            reschedule_link: `${window.location.origin}/patient/visit`,
+            old_room: 'Room 204',
+            new_room: 'Room 208',
+            location_name: 'Central Pathology Lab',
+            new_token: 'LAB-502',
+            wait_minutes: 18,
+            pharmacy_counter: 'Counter 3',
+            feedback_link: `${window.location.origin}/patient/completion?token=CARD-1042`,
+            follow_up_date: '31 Oct 2026',
+            booking_link: `${window.location.origin}/patient/visit`,
+            time: '10:15 AM',
+            action_taken: 'provided immediate medical triage and stabilized your condition',
+            emergency_number: '108',
+          },
+        });
+        setEmailStatus(ok ? `Sent "${label}" successfully via Resend!` : `Sent "${label}"`);
+      }
+    } catch (err) {
+      setEmailStatus(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSendingEvent(null);
+    }
   };
 
   const currentDept = state.departments[selectedDeptId] || {
@@ -741,6 +815,275 @@ export function DevStorePage() {
             >
               View /patient/completion Page →
             </Link>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            RESEND EMAIL SERVICE TESTBENCH (All 18 Activity Templates)
+            ══════════════════════════════════════════════════════════════════ */}
+        <div className="card p-5 sm:p-6 border-2 border-teal-500/30 bg-[var(--color-surface)] rounded-2xl flex flex-col gap-4 shadow-sm">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)] flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Mail size={22} className="text-teal-600" />
+              <div>
+                <h2 className="font-black text-lg text-[var(--color-text)]">
+                  Resend Email Service Testbench (18 Activity Events)
+                </h2>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Test and trigger any real hospital activity email directly with Resend API
+                </p>
+              </div>
+            </div>
+            <StatusBadge variant="success" label="Resend API Active" />
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 items-end">
+            <div className="flex-1 w-full">
+              <Input
+                id="resend-test-email"
+                type="email"
+                label="Recipient Email Address"
+                placeholder="loheprasanna@gmail.com"
+                hint="Your Resend testing domain sends live emails to loheprasanna@gmail.com."
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value.trim())}
+              />
+            </div>
+          </div>
+
+          {emailStatus && (
+            <div className="p-3 bg-teal-50 border border-teal-300 text-teal-950 rounded-xl text-xs font-bold animate-fadeIn flex items-center justify-between">
+              <span>{emailStatus}</span>
+              {sendingEvent && <span className="animate-spin text-sm">⏳</span>}
+            </div>
+          )}
+
+          {/* All 18 events organized by section */}
+          <div className="flex flex-col gap-4">
+            {/* A. Account */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                A. Account (Sign-up & Registration)
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'email_verification'}
+                  onClick={() => handleTestEmailEvent('email_verification', '1. Email verification (OTP)')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  1. Email verification (OTP: 6 digits)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'registration_complete'}
+                  onClick={() => handleTestEmailEvent('registration_complete', '2. Registration complete')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  2. Registration complete (Patient ID)
+                </Button>
+              </div>
+            </div>
+
+            {/* B. Before the visit */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                B. Before the visit
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'opd_slip_confirmation'}
+                  onClick={() => handleTestEmailEvent('opd_slip_confirmation', '3. OPD slip confirmation')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  3. OPD slip confirmation
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'visit_reminder'}
+                  onClick={() => handleTestEmailEvent('visit_reminder', '4. Visit reminder')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  4. Visit reminder (2h / evening before)
+                </Button>
+              </div>
+            </div>
+
+            {/* C. During the visit */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                C. During the visit
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'turn_approaching'}
+                  onClick={() => handleTestEmailEvent('turn_approaching', '5. Turn approaching (5 ahead)')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  5. Turn approaching (5 ahead)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'turn_now'}
+                  onClick={() => handleTestEmailEvent('turn_now', '6. Your turn now')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  6. Your turn now (Called)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'missed_turn'}
+                  onClick={() => handleTestEmailEvent('missed_turn', '7. Missed turn')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  7. Missed turn (Grace window)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'priority_applied'}
+                  onClick={() => handleTestEmailEvent('priority_applied', '8. Priority applied')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  8. Priority applied
+                </Button>
+              </div>
+            </div>
+
+            {/* D. Changes and delays */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                D. Changes and delays
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'delay'}
+                  onClick={() => handleTestEmailEvent('delay', '9. Delay in department (20+ min)')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  9. Delay (20+ min)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'doctor_unavailable'}
+                  onClick={() => handleTestEmailEvent('doctor_unavailable', '10. Doctor unavailable')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  10. Change of doctor
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'room_change'}
+                  onClick={() => handleTestEmailEvent('room_change', '11. Room change')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  11. Room change
+                </Button>
+              </div>
+            </div>
+
+            {/* E. Multi-stop journey */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                E. Multi-stop journey
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'next_step'}
+                  onClick={() => handleTestEmailEvent('next_step', '12. Next step (Lab/X-ray/Pharmacy)')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  12. Next step (Lab / Pharmacy)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'reports_ready'}
+                  onClick={() => handleTestEmailEvent('reports_ready', '13. Reports ready')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  13. Reports ready (Return lane)
+                </Button>
+              </div>
+            </div>
+
+            {/* F. After the visit */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                F. After the visit
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'visit_completed'}
+                  onClick={() => handleTestEmailEvent('visit_completed', '14. Visit completed')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  14. Visit completed (Feedback & Pharmacy)
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'follow_up_reminder'}
+                  onClick={() => handleTestEmailEvent('follow_up_reminder', '15. Follow-up reminder')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  15. Follow-up reminder
+                </Button>
+              </div>
+            </div>
+
+            {/* G. Other events */}
+            <div>
+              <span className="text-xs font-black uppercase tracking-wider text-teal-800 dark:text-teal-400 block mb-2">
+                G. Other events
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'cancellation_confirmed'}
+                  onClick={() => handleTestEmailEvent('cancellation_confirmed', '16. Cancellation confirmed')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  16. Slip cancelled
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'token_shared'}
+                  onClick={() => handleTestEmailEvent('token_shared', '17. Token shared with attendant')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  17. Token shared with attendant
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={sendingEvent === 'urgent_visit_record'}
+                  onClick={() => handleTestEmailEvent('urgent_visit_record', '18. Urgent visit record')}
+                  className="text-xs font-bold text-left justify-start"
+                >
+                  18. Urgent visit record
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

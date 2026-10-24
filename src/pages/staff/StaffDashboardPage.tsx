@@ -48,6 +48,8 @@ export function StaffDashboardPage() {
     completePatientConsultation,
     postponePatient,
     movePatientQueue,
+    markPatientMissed,
+    routePatientOnward,
     acknowledgeEmergencyAlert,
     resolveEmergencyAlert,
   } = useLiveStore();
@@ -829,15 +831,57 @@ export function StaffDashboardPage() {
                         <td className="px-4 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             {isInConsult ? (
-                              <Button
-                                variant="secondary"
-                                size="sm"
-                                icon={<Check size={14} />}
-                                onClick={() => completePatientConsultation(patient.token)}
-                                className="font-bold bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 whitespace-normal break-words"
-                              >
-                                Mark Completed
-                              </Button>
+                              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  icon={<Check size={14} />}
+                                  onClick={() => completePatientConsultation(patient.token)}
+                                  className="font-bold bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 whitespace-normal break-words"
+                                >
+                                  Completed
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => markPatientMissed(patient.token)}
+                                  className="font-bold text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 whitespace-normal break-words text-xs"
+                                  title="Patient called but not present"
+                                >
+                                  Missed Turn
+                                </Button>
+                                <div className="relative group">
+                                  <button
+                                    type="button"
+                                    className="px-2 py-1 text-xs font-bold rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]"
+                                  >
+                                    Next Step ▾
+                                  </button>
+                                  <div className="hidden group-hover:flex group-focus-within:flex flex-col absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 shadow-xl rounded-xl p-1.5 text-xs min-w-36 text-left">
+                                    <button
+                                      type="button"
+                                      onClick={() => routePatientOnward(patient.token, 'Central Pathology Lab')}
+                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800"
+                                    >
+                                      → Route to Lab
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => routePatientOnward(patient.token, 'Radiology & X-Ray Wing')}
+                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800"
+                                    >
+                                      → Route to X-Ray
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => routePatientOnward(patient.token, 'Pharmacy Counter 3')}
+                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800"
+                                    >
+                                      → Route to Pharmacy
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             ) : !isCompleted ? (
                               <>
                                 <Button
@@ -992,15 +1036,33 @@ export function StaffDashboardPage() {
                   {/* Action buttons full width */}
                   <div className="flex flex-col gap-2 pt-2 border-t border-[var(--color-border)]">
                     {isInConsult ? (
-                      <Button
-                        variant="secondary"
-                        fullWidth
-                        icon={<Check size={16} />}
-                        onClick={() => completePatientConsultation(patient.token)}
-                        className="font-bold min-h-12 bg-emerald-700 hover:bg-emerald-800 text-white border-2 border-emerald-900 whitespace-normal break-words"
-                      >
-                        Mark Consultation Complete
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="secondary"
+                          fullWidth
+                          icon={<Check size={16} />}
+                          onClick={() => completePatientConsultation(patient.token)}
+                          className="font-bold min-h-12 bg-emerald-700 hover:bg-emerald-800 text-white border-2 border-emerald-900 whitespace-normal break-words"
+                        >
+                          Mark Consultation Complete
+                        </Button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => markPatientMissed(patient.token)}
+                            className="font-bold min-h-11 border border-amber-300 bg-amber-50 text-amber-900 text-xs"
+                          >
+                            Missed Turn
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => routePatientOnward(patient.token, 'Central Pathology Lab')}
+                            className="font-bold min-h-11 border border-blue-300 bg-blue-50 text-blue-900 text-xs"
+                          >
+                            Route to Lab →
+                          </Button>
+                        </div>
+                      </div>
                     ) : !isCompleted ? (
                       <>
                         <Button

@@ -12,15 +12,36 @@ import {
   createMockGuestUser,
 } from '../data/mockUserData';
 
+import { syncUserProfileToSupabase, fetchSupabaseUser } from '../services/supabaseClient';
+
+export function deriveNameFromEmail(email?: string): string {
+  if (!email) return 'Registered Patient';
+  const localPart = email.split('@')[0];
+  if (!localPart) return 'Registered Patient';
+  const cleaned = localPart.replace(/[0-9]+/g, ' ').replace(/[._-]+/g, ' ').trim();
+  if (!cleaned) return 'Registered Patient';
+  const words = cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  return words.length > 0 ? words.join(' ') : 'Registered Patient';
+}
+
 interface AuthContextValue {
   user: UserProfile | null;
   role: UserRole | null;
   isAuthenticated: boolean;
   isGuest: boolean;
-  loginAsPatientWithOtp: (phone: string, otp: string) => Promise<boolean>;
+  loginAsPatientWithOtp: (
+    phone: string,
+    otp: string,
+    email?: string,
+    name?: string
+  ) => Promise<UserProfile>;
   loginAsGuest: () => UserProfile;
   loginAsStaff: (staffId: string, password?: string) => Promise<boolean>;
   logout: () => void;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
   getDisplayName: (customUser?: UserProfile | null) => string;
 }
 
@@ -44,21 +65,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      syncUserProfileToSupabase(user);
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [user]);
 
-  const loginAsPatientWithOtp = async (phone: string, _otp: string): Promise<boolean> => {
-    // Simulate brief network delay
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    // Any 4 digits are accepted for demo; create or return registered patient profile
+  // Attempt to refresh user data from Supabase in the background
+  useEffect(() => {
+    if (user?.id && !user.isGuest) {
+      fetchSupabaseUser(user.id).then((cloudUser) => {
+        if (cloudUser && cloudUser.name && cloudUser.name !== 'Patient') {
+          setUser((prev) => (prev ? { ...prev, ...cloudUser } : cloudUser));
+        }
+      });
+    }
+  }, [user?.id, user?.isGuest]);
+
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      syncUserProfileToSupabase(updated);
+      return updated;
+    });
+  };
+
+  const loginAsPatientWithOtp = async (
+    phone: string,
+    _otp: string,
+    email?: string,
+    name?: string
+  ): Promise<UserProfile> => {
+    const normalizedEmail = email?.trim().toLowerCase();
+    const patientId =
+      phone && MOCK_REGISTERED_PATIENT.phone === phone
+        ? MOCK_REGISTERED_PATIENT.id
+        : `pat-${phone.slice(-4)}-${Date.now().toString().slice(-5)}`;
+
+    // Determine clean authentic patient name
+    const cleanName =
+      name?.trim() ||
+      (phone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.name : '') ||
+      deriveNameFromEmail(normalizedEmail) ||
+      'Registered Patient';
+
     const registeredUser: UserProfile = {
       ...MOCK_REGISTERED_PATIENT,
+      id: patientId,
+      name: cleanName,
       phone: phone || MOCK_REGISTERED_PATIENT.phone,
+      email: normalizedEmail,
+      emailVerified: Boolean(normalizedEmail),
+      visits: phone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.visits : [],
+      reports: phone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.reports : [],
     };
+
     setUser(registeredUser);
-    return true;
+    syncUserProfileToSupabase(registeredUser);
+    return registeredUser;
   };
 
   const loginAsGuest = (): UserProfile => {
@@ -96,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loginAsGuest,
     loginAsStaff,
     logout,
+    updateUserProfile,
     getDisplayName,
   };
 
