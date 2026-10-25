@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -14,6 +14,10 @@ import {
   CheckCircle2,
   Edit2,
   Check,
+  Mail,
+  RefreshCw,
+  Search,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth, deriveNameFromEmail } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
@@ -29,89 +33,161 @@ import {
   fetchSupabaseSlips,
   fetchSupabaseVisits,
   fetchSupabaseReports,
+  fetchSupabaseUserByEmailOrPhone,
   subscribeToRealtimeSlips,
   subscribeToRealtimeVisits,
 } from '../../services/supabaseClient';
-import type { Slip, VisitRecord, MedicalReport } from '../../types';
+import type { Slip, VisitRecord, MedicalReport, UserProfile } from '../../types';
 
 export function PatientHistoryPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user, isGuest, updateUserProfile } = useAuth();
+  const { user, isGuest: rawIsGuest, updateUserProfile, switchPatientAccountByEmail } = useAuth();
 
+  // Guard against doctor/staff credentials contaminating the patient view
+  const isStaffUser = user?.role === 'staff' || user?.id?.startsWith('stf-');
+  const effectiveUser = isStaffUser ? null : user;
+
+  // Active email account being viewed
+  const [emailAccount, setEmailAccount] = useState<string>(() => {
+    if (effectiveUser?.email) return effectiveUser.email.trim().toLowerCase();
+    try {
+      const saved = localStorage.getItem('vd-patient-email');
+      if (saved) return saved.trim().toLowerCase();
+      const latestRaw = localStorage.getItem('vd-latest-slip');
+      if (latestRaw) {
+        const parsed = JSON.parse(latestRaw);
+        if (parsed?.patientEmail) return parsed.patientEmail.trim().toLowerCase();
+      }
+    } catch {}
+    return '';
+  });
+
+  const [cloudProfile, setCloudProfile] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'slips' | 'reports'>('slips');
   const [slips, setSlips] = useState<Slip[]>([]);
   const [cloudVisits, setCloudVisits] = useState<VisitRecord[]>([]);
   const [cloudReports, setCloudReports] = useState<MedicalReport[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Email account switcher states
+  const [isSwitchingEmail, setIsSwitchingEmail] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailSwitchError, setEmailSwitchError] = useState('');
+
+  // Profile Edit states
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [nameInput, setNameInput] = useState('');
   const [ageInput, setAgeInput] = useState<number | ''>('');
   const [genderInput, setGenderInput] = useState<string>('');
 
-  // Determine authentic patient name
-  const authenticatedName = useMemo(() => {
-    if (user?.name && user.name !== 'Patient' && user.name !== 'Registered Patient') {
-      return user.name;
-    }
-    const slipWithName = slips.find((s) => s.patientName && s.patientName !== 'Patient');
-    if (slipWithName?.patientName) return slipWithName.patientName;
-    if (user?.email) {
-      const derived = deriveNameFromEmail(user.email);
-      if (derived && derived !== 'Registered Patient') return derived;
-    }
-    return user?.name || 'Registered Patient';
-  }, [user, slips]);
+  const isGuest = !emailAccount && (rawIsGuest || !effectiveUser);
 
-  // Synchronize authenticated name if user profile was generic
+  // Synchronize emailAccount if user logs in or user profile changes
   useEffect(() => {
-    if (user && user.name === 'Patient' && authenticatedName && authenticatedName !== 'Patient') {
-      updateUserProfile({ name: authenticatedName });
-    }
-  }, [user, authenticatedName, updateUserProfile]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [cloudSlips, localSlips] = await Promise.all([
-          fetchSupabaseSlips(user?.id, user?.email, user?.phone),
-          getPatientSlipHistory(user?.id, user?.email),
-        ]);
-        const slipMap = new Map<string, Slip>();
-        for (const s of cloudSlips) slipMap.set(s.token || s.id, s);
-        for (const s of localSlips) {
-          const key = s.token || s.id;
-          if (!slipMap.has(key)) slipMap.set(key, s);
-        }
-
-        if (isMounted) {
-          setSlips(Array.from(slipMap.values()));
-        }
-
-        if (user?.id) {
-          const [vData, rData] = await Promise.all([
-            fetchSupabaseVisits(user.id, user.email),
-            fetchSupabaseReports(user.id),
-          ]);
-          if (isMounted) {
-            if (vData.length > 0) setCloudVisits(vData);
-            if (rData.length > 0) setCloudReports(rData);
-          }
-        }
-      } catch (err) {
-        console.warn('Failed to load history', err);
-      } finally {
-        if (isMounted) setLoading(false);
+    if (effectiveUser?.email) {
+      const clean = effectiveUser.email.trim().toLowerCase();
+      if (clean !== emailAccount) {
+        setEmailAccount(clean);
       }
     }
+  }, [effectiveUser?.email]);
 
+  // Determine authentic patient name — NEVER a doctor or random staff
+  const authenticatedName = useMemo(() => {
+    if (cloudProfile?.name && cloudProfile.name !== 'Patient' && cloudProfile.name !== 'Registered Patient') {
+      return cloudProfile.name;
+    }
+    if (
+      effectiveUser?.name &&
+      effectiveUser.name !== 'Patient' &&
+      effectiveUser.name !== 'Registered Patient' &&
+      !effectiveUser.name.toLowerCase().startsWith('dr.')
+    ) {
+      return effectiveUser.name;
+    }
+    const slipWithName = slips.find(
+      (s) => s.patientName && s.patientName !== 'Patient' && !s.patientName.toLowerCase().startsWith('dr.')
+    );
+    if (slipWithName?.patientName) return slipWithName.patientName;
+    if (emailAccount) {
+      const derived = deriveNameFromEmail(emailAccount);
+      if (derived && derived !== 'Registered Patient') return derived;
+    }
+    return effectiveUser?.name || 'Registered Patient';
+  }, [cloudProfile, effectiveUser, slips, emailAccount]);
+
+  // Load patient cloud profile whenever email changes
+  useEffect(() => {
+    let isMounted = true;
+    if (!emailAccount) {
+      setCloudProfile(null);
+      return;
+    }
+
+    fetchSupabaseUserByEmailOrPhone(emailAccount).then((profile) => {
+      if (isMounted && profile) {
+        setCloudProfile(profile);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [emailAccount]);
+
+  // Main data loader strictly partitioned by active email or patient ID
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const activeId = cloudProfile?.id || effectiveUser?.id;
+      const cleanEmail = emailAccount || undefined;
+
+      const [cloudSlips, localSlips] = await Promise.all([
+        fetchSupabaseSlips(activeId, cleanEmail),
+        getPatientSlipHistory(activeId, cleanEmail),
+      ]);
+
+      const slipMap = new Map<string, Slip>();
+      for (const s of cloudSlips) slipMap.set(s.token || s.id, s);
+      for (const s of localSlips) {
+        const key = s.token || s.id;
+        if (!slipMap.has(key)) slipMap.set(key, s);
+      }
+
+      setSlips(Array.from(slipMap.values()));
+
+      if (activeId || cleanEmail) {
+        const [vData, rData] = await Promise.all([
+          fetchSupabaseVisits(activeId, cleanEmail),
+          activeId ? fetchSupabaseReports(activeId) : Promise.resolve([]),
+        ]);
+        setCloudVisits(vData);
+        setCloudReports(rData);
+      } else {
+        setCloudVisits([]);
+        setCloudReports([]);
+      }
+    } catch (err) {
+      console.warn('[PatientHistory] Failed to load history:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [cloudProfile?.id, effectiveUser?.id, emailAccount]);
+
+  // Trigger data load on email or user change
+  useEffect(() => {
     loadData();
+  }, [loadData]);
 
-    // Setup Supabase Realtime subscriptions for live synchronization
-    const unsubscribeSlips = subscribeToRealtimeSlips(user?.id, user?.email, (newOrUpdatedSlip) => {
+  // Real-time synchronization
+  useEffect(() => {
+    let isMounted = true;
+    const activeId = cloudProfile?.id || effectiveUser?.id;
+    const cleanEmail = emailAccount || undefined;
+
+    // 1. Supabase Postgres Realtime Subscription strictly isolated for this email / user
+    const unsubscribeSlips = subscribeToRealtimeSlips(activeId, cleanEmail, (newOrUpdatedSlip) => {
       if (!isMounted) return;
       setSlips((prev) => {
         const map = new Map<string, Slip>();
@@ -124,7 +200,7 @@ export function PatientHistoryPage() {
       });
     });
 
-    const unsubscribeVisits = subscribeToRealtimeVisits(user?.id, (newOrUpdatedVisit) => {
+    const unsubscribeVisits = subscribeToRealtimeVisits(activeId, (newOrUpdatedVisit) => {
       if (!isMounted) return;
       setCloudVisits((prev) => {
         const map = new Map<string, VisitRecord>();
@@ -136,16 +212,68 @@ export function PatientHistoryPage() {
       });
     });
 
+    // 2. Cross-tab real-time sync via BroadcastChannel
+    let broadcast: BroadcastChannel | null = null;
+    try {
+      broadcast = new BroadcastChannel('vaid-disha-sync');
+      broadcast.onmessage = (event) => {
+        if (!isMounted) return;
+        if (event.data?.type === 'SLIP_CREATED' || event.data?.type === 'QUEUE_UPDATED') {
+          loadData();
+        }
+      };
+    } catch {}
+
+    // 3. Storage event sync
+    const handleStorage = (e: StorageEvent) => {
+      if (!isMounted) return;
+      if (e.key === 'vd-patient-slips' || e.key === 'vd-latest-slip' || e.key === 'vd-patient-email') {
+        loadData();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
     return () => {
       isMounted = false;
       unsubscribeSlips();
       unsubscribeVisits();
+      broadcast?.close();
+      window.removeEventListener('storage', handleStorage);
     };
-  }, [user?.id, user?.email, user?.phone]);
+  }, [cloudProfile?.id, effectiveUser?.id, emailAccount, loadData]);
 
-  // Combine user visits & reports
-  const pastVisits: VisitRecord[] = cloudVisits.length > 0 ? cloudVisits : (user?.visits || []);
-  const reports: MedicalReport[] = cloudReports.length > 0 ? cloudReports : (user?.reports || []);
+  // Handle switching to a different email account
+  const handleSwitchEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = emailInput.trim().toLowerCase();
+    if (!clean || !clean.includes('@') || !clean.includes('.')) {
+      setEmailSwitchError('Please enter a valid email address');
+      return;
+    }
+    setEmailSwitchError('');
+    try {
+      await switchPatientAccountByEmail(clean);
+      setEmailAccount(clean);
+      setIsSwitchingEmail(false);
+      setEmailInput('');
+    } catch {
+      setEmailSwitchError('Failed to switch account. Please try again.');
+    }
+  };
+
+  // Profile data values
+  const displayId =
+    cloudProfile?.id ||
+    effectiveUser?.id ||
+    (emailAccount ? `pat-${emailAccount.replace(/[^a-z0-9]/gi, '').slice(0, 10)}` : 'pat-guest');
+
+  const displayPhone = cloudProfile?.phone || effectiveUser?.phone || 'Not set';
+  const displayAge = cloudProfile?.age !== undefined ? cloudProfile.age : effectiveUser?.age;
+  const displayGender = cloudProfile?.gender || effectiveUser?.gender;
+  const displayAbha = cloudProfile?.abhaId || effectiveUser?.abhaId || '12-3456-7890-1234';
+
+  const pastVisits: VisitRecord[] = cloudVisits.length > 0 ? cloudVisits : (effectiveUser?.visits || []);
+  const reports: MedicalReport[] = cloudReports.length > 0 ? cloudReports : (effectiveUser?.reports || []);
 
   return (
     <BaseLayout showHome={true} headerTitle={t('app.name')}>
@@ -157,6 +285,88 @@ export function PatientHistoryPage() {
           onBack={() => navigate('/')}
         />
 
+        {/* ── ACCOUNT EMAIL PARTITION & SWITCHER BAR ────────────────────── */}
+        <div className="bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl p-4 shadow-sm flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-100 text-[var(--color-primary-600)] flex items-center justify-center font-bold shrink-0">
+                <Mail size={18} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    Active Patient Account:
+                  </span>
+                  <span className="text-sm font-black text-[var(--color-text)] truncate">
+                    {emailAccount || 'Guest (No email linked)'}
+                  </span>
+                  {emailAccount && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <CheckCircle2 size={11} /> Isolated Cloud Records
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                  History is strictly partitioned by email. Each account sees only their own visits and slips.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<RefreshCw size={14} className={loading ? 'animate-spin' : ''} />}
+                onClick={() => loadData()}
+                title="Refresh records"
+              >
+                Refresh
+              </Button>
+              <Button
+                variant={isSwitchingEmail ? 'ghost' : 'secondary'}
+                size="sm"
+                icon={<Search size={14} />}
+                onClick={() => {
+                  setIsSwitchingEmail(!isSwitchingEmail);
+                  setEmailSwitchError('');
+                }}
+              >
+                {isSwitchingEmail ? 'Cancel' : 'Switch Email'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Switch Email Input Drawer */}
+          {isSwitchingEmail && (
+            <form
+              onSubmit={handleSwitchEmail}
+              className="mt-2 pt-3 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
+            >
+              <div className="relative flex-1">
+                <Mail
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none"
+                />
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="Enter email to view history (e.g. yourname@gmail.com)"
+                  className="w-full pl-9 pr-3 py-2 text-sm font-semibold rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
+                  autoFocus
+                  required
+                />
+              </div>
+              <Button type="submit" variant="primary" size="sm" icon={<UserCheck size={16} />}>
+                View Account History
+              </Button>
+              {emailSwitchError && (
+                <p className="text-xs font-bold text-red-600 sm:w-full">{emailSwitchError}</p>
+              )}
+            </form>
+          )}
+        </div>
+
         {/* ── GUEST USER PROMPT ────────────────────────────────────────── */}
         {isGuest && (
           <OptionCard
@@ -167,7 +377,7 @@ export function PatientHistoryPage() {
             description={t('history.guest_desc')}
             className="border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60"
             footer={
-              <div className="pt-2">
+              <div className="pt-2 flex items-center gap-3 flex-wrap">
                 <Button
                   variant="primary"
                   size="sm"
@@ -176,13 +386,20 @@ export function PatientHistoryPage() {
                 >
                   {t('history.guest_login_btn')}
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => setIsSwitchingEmail(true)}
+                  className="text-xs font-bold text-[var(--color-primary-600)] hover:underline"
+                >
+                  Have an existing registered email? Click here to load it
+                </button>
               </div>
             }
           />
         )}
 
         {/* ── REGISTERED USER PROFILE BANNER ──────────────────────────── */}
-        {!isGuest && user && (
+        {!isGuest && (
           <div className="bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3.5">
@@ -199,8 +416,8 @@ export function PatientHistoryPage() {
                         type="button"
                         onClick={() => {
                           setNameInput(authenticatedName);
-                          setAgeInput(user.age !== undefined && user.age !== null ? user.age : '');
-                          setGenderInput(user.gender || '');
+                          setAgeInput(displayAge !== undefined && displayAge !== null ? displayAge : '');
+                          setGenderInput(displayGender || '');
                           setIsEditingProfile(true);
                         }}
                         className="p-1 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-surface-2)] transition-colors"
@@ -212,7 +429,7 @@ export function PatientHistoryPage() {
                     )}
                   </div>
                   <p className="text-xs font-mono font-semibold text-[var(--color-primary-600)] mt-0.5">
-                    Patient ID: {user.id}
+                    Patient ID: {displayId}
                   </p>
                 </div>
               </div>
@@ -234,6 +451,14 @@ export function PatientHistoryPage() {
                       age: ageInput !== '' ? Number(ageInput) : undefined,
                       gender: genderInput || undefined,
                     });
+                    if (cloudProfile) {
+                      setCloudProfile({
+                        ...cloudProfile,
+                        name: nameInput.trim(),
+                        age: ageInput !== '' ? Number(ageInput) : undefined,
+                        gender: genderInput || undefined,
+                      });
+                    }
                     setIsEditingProfile(false);
                   }
                 }}
@@ -246,7 +471,7 @@ export function PatientHistoryPage() {
                       type="text"
                       value={nameInput}
                       onChange={(e) => setNameInput(e.target.value)}
-                      placeholder="Enter your name"
+                      placeholder="Enter patient name"
                       className="w-full px-3 py-2 text-sm font-semibold rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
                       required
                     />
@@ -298,21 +523,21 @@ export function PatientHistoryPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[var(--color-border)] text-xs font-medium text-[var(--color-text-muted)]">
                 <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
                   <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">Phone</span>
-                  <span className="font-semibold text-[var(--color-text)] truncate">{user.phone || '1234567890'}</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">{displayPhone}</span>
                 </div>
                 <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
                   <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">Email</span>
-                  <span className="font-semibold text-[var(--color-text)] truncate">{user.email || 'None'}</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">{emailAccount || 'None'}</span>
                 </div>
                 <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
                   <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">Age & Gender</span>
                   <span className="font-semibold text-[var(--color-text)] truncate">
-                    {user.age !== undefined && user.age !== null ? `${user.age} yrs` : 'Not set'} • {user.gender || 'Not set'}
+                    {displayAge !== undefined && displayAge !== null ? `${displayAge} yrs` : 'Not set'} • {displayGender || 'Not set'}
                   </span>
                 </div>
                 <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
                   <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">ABHA ID</span>
-                  <span className="font-semibold text-[var(--color-text)] truncate">{user.abhaId || '12-3456-7890-1234'}</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">{displayAbha}</span>
                 </div>
               </div>
             )}
@@ -334,7 +559,7 @@ export function PatientHistoryPage() {
               ].join(' ')}
             >
               <Ticket size={16} />
-              <span>{t('history.visits_tab')}</span>
+              <span>{t('history.visits_tab')} ({slips.length})</span>
             </button>
             <button
               role="tab"
@@ -356,12 +581,17 @@ export function PatientHistoryPage() {
         {/* ── TAB 1: VISITS & SLIPS ───────────────────────────────────── */}
         {(!isGuest ? activeTab === 'slips' : true) && (
           <div className="flex flex-col gap-4">
-            {/* Recent Slips from localStorage */}
+            {/* Recent Slips strictly matching this patient account */}
             {slips.length > 0 && (
               <section aria-label={t('history.current_session_slips')}>
-                <h3 className="section-label">
-                  {isGuest ? t('history.current_session_slips') : t('history.active_slips', { defaultValue: 'Recent Visit Slips' })}
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="section-label">
+                    {isGuest ? t('history.current_session_slips') : t('history.active_slips', { defaultValue: 'Recent Visit Slips' })}
+                  </h3>
+                  <span className="text-xs font-semibold text-[var(--color-text-muted)]">
+                    {slips.length} {slips.length === 1 ? 'slip' : 'slips'} found
+                  </span>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {slips.map((slip) => {
                     const statusVariant =
@@ -381,7 +611,7 @@ export function PatientHistoryPage() {
                         iconBgClass="bg-[var(--color-primary-500)] text-white shadow-sm"
                         title={
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span>{slip.token}</span>
+                            <span className="font-mono font-black">{slip.token}</span>
                             <span className="text-sm font-normal text-[var(--color-text-muted)]">
                               • {t(slip.department.nameKey)}
                             </span>
@@ -414,9 +644,20 @@ export function PatientHistoryPage() {
             {!isGuest && (
               <section aria-label={t('history.past_consultations')}>
                 <h3 className="section-label">{t('history.past_consultations')}</h3>
-                {pastVisits.length === 0 && slips.length === 0 ? (
-                  <Card className="text-center py-8 text-[var(--color-text-muted)]">
-                    <p>{t('history.no_records')}</p>
+                {pastVisits.length === 0 && slips.length === 0 && !loading ? (
+                  <Card className="text-center py-10 text-[var(--color-text-muted)] flex flex-col items-center">
+                    <Ticket size={36} className="mb-2 opacity-40 text-[var(--color-primary-500)]" />
+                    <p className="font-bold text-base text-[var(--color-text)]">
+                      No previous visits found for {emailAccount || 'this account'}.
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1 max-w-md">
+                      Any hospital slips generated with this email address will appear here automatically and update in real time.
+                    </p>
+                    <div className="mt-4 flex items-center gap-2">
+                      <Button variant="primary" size="sm" onClick={() => navigate('/patient/visit')}>
+                        Generate OPD Visit Slip
+                      </Button>
+                    </div>
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -462,11 +703,13 @@ export function PatientHistoryPage() {
 
             {/* Guest with no slips */}
             {isGuest && slips.length === 0 && !loading && (
-              <Card className="text-center py-10 text-[var(--color-text-muted)]">
-                <Ticket size={36} className="mx-auto mb-2 opacity-50" />
-                <p className="font-semibold text-base">{t('history.no_records')}</p>
-                <p className="text-xs mt-1">Start a visit at the hospital entrance to receive your queue slip.</p>
-                <div className="mt-4">
+              <Card className="text-center py-10 text-[var(--color-text-muted)] flex flex-col items-center">
+                <Ticket size={36} className="mb-2 opacity-40 text-[var(--color-primary-500)]" />
+                <p className="font-semibold text-base text-[var(--color-text)]">{t('history.no_records')}</p>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  Start a visit at the hospital entrance to receive your queue slip.
+                </p>
+                <div className="mt-4 flex items-center gap-2">
                   <Button variant="primary" size="sm" onClick={() => navigate('/patient/visit')}>
                     Start New Visit
                   </Button>
@@ -482,7 +725,7 @@ export function PatientHistoryPage() {
             <h3 className="section-label">{t('history.reports_title')}</h3>
             {reports.length === 0 ? (
               <Card className="text-center py-8 text-[var(--color-text-muted)]">
-                <p>No medical reports available yet.</p>
+                <p>No medical reports available yet for this account.</p>
               </Card>
             ) : (
               <div className="flex flex-col gap-3">

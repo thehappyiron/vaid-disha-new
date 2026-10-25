@@ -369,7 +369,8 @@ export async function generateSlip(
     : (waitMinutes <= 5 ? 'turn_soon' : 'waiting');
 
   const authRaw = typeof window !== 'undefined' ? localStorage.getItem('vd-auth-user') : null;
-  const authUser = authRaw ? JSON.parse(authRaw) : null;
+  const rawParsed = authRaw ? JSON.parse(authRaw) : null;
+  const authUser = rawParsed && rawParsed.role !== 'staff' && !rawParsed.id?.startsWith('stf-') ? rawParsed : null;
   const isGuest = authUser ? Boolean(authUser.isGuest) : true;
 
   const resolvedName =
@@ -431,7 +432,8 @@ export async function saveSlip(slip: Slip, isGuest?: boolean): Promise<Slip> {
     const list: Slip[] = raw ? JSON.parse(raw) : [];
 
     const authRaw = localStorage.getItem('vd-auth-user');
-    const authUser = authRaw ? JSON.parse(authRaw) : null;
+    const rawParsed = authRaw ? JSON.parse(authRaw) : null;
+    const authUser = rawParsed && rawParsed.role !== 'staff' && !rawParsed.id?.startsWith('stf-') ? rawParsed : null;
     const determinedIsGuest = isGuest ?? (authUser ? Boolean(authUser.isGuest) : true);
 
     const enrichedSlip: Slip = {
@@ -613,52 +615,54 @@ export async function getSlipById(id: string): Promise<Slip | null> {
   }
 }
 
-/** Get list of all previous slips for the patient (merged from localStorage and Supabase) */
+/** Get list of all previous slips for the patient (strictly isolated by email or userId) */
 export async function getPatientSlipHistory(
   userId?: string,
   userEmail?: string
 ): Promise<Slip[]> {
-  await sleep(100);
+  await sleep(60);
   try {
+    const cleanEmail = userEmail?.trim().toLowerCase();
+    const cleanUserId = userId && !userId.startsWith('stf-') ? userId.trim() : undefined;
+
+    // Strict privacy: if neither identifier is provided, return empty
+    if (!cleanUserId && !cleanEmail) {
+      return [];
+    }
+
     const raw = localStorage.getItem(SLIPS_STORAGE_KEY);
     const localList: Slip[] = raw ? JSON.parse(raw) : [];
 
+    // Filter local slips strictly: never leak slips from other emails
+    const filteredLocal = localList.filter((s) => {
+      const slipEmail = s.patientEmail ? s.patientEmail.trim().toLowerCase() : null;
+      if (cleanEmail) {
+        if (slipEmail) return slipEmail === cleanEmail;
+        return Boolean(cleanUserId && s.userId === cleanUserId);
+      }
+      if (cleanUserId) {
+        return s.userId === cleanUserId && !slipEmail;
+      }
+      return false;
+    });
+
     // Fetch from Supabase cloud database
-    const cloudSlips = await fetchSupabaseSlips(userId, userEmail);
+    const cloudSlips = await fetchSupabaseSlips(cleanUserId, cleanEmail);
 
     const slipMap = new Map<string, Slip>();
     // Priority: cloud slips first
     for (const s of cloudSlips) {
       slipMap.set(s.token || s.id, s);
     }
-    // Merge local slips
-    for (const s of localList) {
+    // Merge filtered local slips
+    for (const s of filteredLocal) {
       const key = s.token || s.id;
       if (!slipMap.has(key)) {
         slipMap.set(key, s);
       }
     }
 
-    const merged = Array.from(slipMap.values());
-    // Cache merged back to localStorage
-    if (merged.length > 0) {
-      try {
-        localStorage.setItem(SLIPS_STORAGE_KEY, JSON.stringify(merged));
-      } catch {
-        // storage quota catch
-      }
-    }
-
-    const cleanEmail = userEmail?.trim().toLowerCase();
-    if (userId || cleanEmail) {
-      return merged.filter((s) => {
-        if (userId && s.userId === userId) return true;
-        if (cleanEmail && s.patientEmail?.trim().toLowerCase() === cleanEmail) return true;
-        return false;
-      });
-    }
-
-    return merged;
+    return Array.from(slipMap.values());
   } catch {
     return [];
   }

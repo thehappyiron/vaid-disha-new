@@ -305,21 +305,29 @@ export async function fetchSupabaseSlipById(idOrToken: string): Promise<Slip | n
   }
 }
 
-/** Fetch all slips for a patient (querying across user_id, email, or phone) */
+/** Fetch all slips for a patient (strictly partitioned by email and userId) */
 export async function fetchSupabaseSlips(
   userId?: string,
   userEmail?: string,
   _userPhone?: string
 ): Promise<Slip[]> {
   if (!supabase) return [];
+  const cleanEmail = userEmail?.trim().toLowerCase();
+  const cleanUserId = userId && !userId.startsWith('stf-') ? userId.trim() : undefined;
+
+  // STRICT PRIVACY: If neither a valid patient userId nor an email is provided,
+  // never return slips indiscriminately across accounts.
+  if (!cleanUserId && !cleanEmail) {
+    return [];
+  }
+
   try {
     let query = supabase.from('slips').select('*').order('generated_at', { ascending: false });
 
-    const cleanEmail = userEmail?.trim().toLowerCase();
-    if (userId && cleanEmail) {
-      query = query.or(`user_id.eq.${userId},patient_email.ilike.${cleanEmail}`);
-    } else if (userId) {
-      query = query.eq('user_id', userId);
+    if (cleanUserId && cleanEmail) {
+      query = query.or(`user_id.eq.${cleanUserId},patient_email.ilike.${cleanEmail}`);
+    } else if (cleanUserId) {
+      query = query.eq('user_id', cleanUserId);
     } else if (cleanEmail) {
       query = query.ilike('patient_email', cleanEmail);
     }
@@ -327,7 +335,20 @@ export async function fetchSupabaseSlips(
     const { data, error } = await query;
     if (error || !data) return [];
 
-    return data.map((row) => ({
+    // Strictly isolate: If an email was requested, any slip containing an email MUST match it
+    const filtered = data.filter((row) => {
+      const rowEmail = row.patient_email ? row.patient_email.trim().toLowerCase() : null;
+      if (cleanEmail) {
+        if (rowEmail) return rowEmail === cleanEmail;
+        return Boolean(cleanUserId && row.user_id === cleanUserId);
+      }
+      if (cleanUserId) {
+        return row.user_id === cleanUserId && !rowEmail;
+      }
+      return false;
+    });
+
+    return filtered.map((row) => ({
       id: row.id,
       generatedAt: row.generated_at,
       patientPurposeKey: row.purpose_id || 'consultation',
@@ -375,14 +396,18 @@ export async function fetchSupabaseVisits(
   userEmail?: string
 ): Promise<VisitRecord[]> {
   if (!supabase) return [];
+  const cleanEmail = userEmail?.trim().toLowerCase();
+  const cleanUserId = userId && !userId.startsWith('stf-') ? userId.trim() : undefined;
+
+  if (!cleanUserId && !cleanEmail) return [];
+
   try {
     let query = supabase.from('visits').select('*').order('created_at', { ascending: false });
-    const cleanEmail = userEmail?.trim().toLowerCase();
 
-    if (userId && cleanEmail) {
-      query = query.or(`user_id.eq.${userId},patient_name.ilike.%${cleanEmail}%`);
-    } else if (userId) {
-      query = query.eq('user_id', userId);
+    if (cleanUserId && cleanEmail) {
+      query = query.or(`user_id.eq.${cleanUserId},patient_name.ilike.%${cleanEmail}%`);
+    } else if (cleanUserId) {
+      query = query.eq('user_id', cleanUserId);
     }
 
     const { data, error } = await query;
@@ -510,7 +535,12 @@ export function subscribeToRealtimeSlips(
   if (!supabase || !onSlipChange) return () => {};
 
   const cleanEmail = userEmail?.trim().toLowerCase();
-  const channelName = `realtime-slips-${userId || cleanEmail || 'all'}-${Date.now()}`;
+  const cleanUserId = userId && !userId.startsWith('stf-') ? userId.trim() : undefined;
+
+  // Do not listen to broad unisolated events if neither id nor email is given
+  if (!cleanEmail && !cleanUserId) return () => {};
+
+  const channelName = `realtime-slips-${cleanUserId || cleanEmail}-${Date.now()}`;
 
   const channel = supabase
     .channel(channelName)
@@ -521,13 +551,21 @@ export function subscribeToRealtimeSlips(
         const row: any = payload.new;
         if (!row) return;
 
-        // Filter for this user/email if specified
-        if (userId && row.user_id && row.user_id === userId) {
-          // match
-        } else if (cleanEmail && row.patient_email && row.patient_email.trim().toLowerCase() === cleanEmail) {
-          // match
-        } else if (userId || cleanEmail) {
-          return;
+        const rowEmail = row.patient_email ? row.patient_email.trim().toLowerCase() : null;
+        let matches = false;
+
+        if (cleanEmail) {
+          if (rowEmail === cleanEmail) {
+            matches = true;
+          } else if (!rowEmail && cleanUserId && row.user_id === cleanUserId) {
+            matches = true;
+          }
+        } else if (cleanUserId && row.user_id === cleanUserId) {
+          matches = true;
+        }
+
+        if (!matches) {
+          return; // Strictly isolate: do not leak updates for other accounts
         }
 
         const mappedSlip: Slip = {
