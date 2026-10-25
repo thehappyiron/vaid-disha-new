@@ -329,6 +329,31 @@ VAID DISHA APP & WEB NAVIGATION:
           return;
         }
 
+        if (url === '/api/admin/analyze-layout' && req.method === 'POST') {
+          const chunks: Buffer[] = [];
+          req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+          req.on('end', async () => {
+            res.setHeader('Content-Type', 'application/json');
+            try {
+              const body = JSON.parse(Buffer.concat(chunks).toString('utf-8') || '{}');
+              const image = body.image || '';
+              if (!image) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Image data is required' }));
+                return;
+              }
+              const analyzer = await import('./server/layoutAnalyzer.mjs');
+              const layoutData = await analyzer.analyzeLayoutWithGroq(image, groqKey);
+              res.statusCode = 200;
+              res.end(JSON.stringify(layoutData));
+            } catch (err: any) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: err?.message || 'Layout analysis failed' }));
+            }
+          });
+          return;
+        }
+
         next();
       });
     },

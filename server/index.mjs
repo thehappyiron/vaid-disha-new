@@ -1,6 +1,8 @@
 import { createServer } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
 import { sendActivityEmail, sendVerificationOtp, verifyOtp } from './email.mjs';
+import { analyzeLayoutWithGroq } from './layoutAnalyzer.mjs';
+
 
 // Local development convenience: load only server-side values from .env.
 // The file is gitignored and is never imported by the Vite client bundle.
@@ -234,6 +236,17 @@ const server = createServer(async (request, response) => {
         vars: body.vars || {},
       });
       sendJson(response, 200, { ok: true, ...result });
+      return;
+    }
+    if (request.url === '/api/admin/analyze-layout') {
+      const body = JSON.parse(raw.toString('utf8') || '{}');
+      const image = body.image || '';
+      if (!image) {
+        sendJson(response, 400, { error: 'Image data is required.' });
+        return;
+      }
+      const layoutData = await analyzeLayoutWithGroq(image, groqKey);
+      sendJson(response, 200, layoutData);
       return;
     }
     if (!assertConfigured(response)) return;

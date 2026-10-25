@@ -242,7 +242,7 @@ export function RoleSelectionPage() {
 
           {/* 3. Hospital Administration Role */}
           <OptionCard
-            onClick={() => navigate('/admin/coming-soon')}
+            onClick={() => navigate('/admin')}
             ariaLabel={`${t('roles.admin_title')}: ${t('roles.admin_desc')}`}
             icon={<Building2 size={26} aria-hidden="true" />}
             iconBgClass="bg-[var(--color-surface-2)] text-[var(--color-neutral-700)]"

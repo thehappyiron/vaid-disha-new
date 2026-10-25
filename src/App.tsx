@@ -19,7 +19,7 @@ import {
   PatientReportsPage,
 } from './pages/patient';
 import { StaffLoginPage, StaffDashboardPage, StaffPatientsPage } from './pages/staff';
-import { AdminComingSoonPage } from './pages/admin';
+import { AdminComingSoonPage, AdminLayoutDigitizerPage } from './pages/admin';
 import { PurposePage } from './pages/PurposePage';
 import { DepartmentPage } from './pages/DepartmentPage';
 import { SlipPage } from './pages/SlipPage';
@@ -84,8 +84,11 @@ export function App() {
             <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
             <Route path="/staff/patients" element={<StaffPatientsPage />} />
 
-            {/* Hospital Admin Coming Soon */}
-            <Route path="/admin/coming-soon" element={<AdminComingSoonPage />} />
+            {/* Hospital Administration AI Layout Digitizer */}
+            <Route path="/admin" element={<AdminLayoutDigitizerPage />} />
+            <Route path="/admin/layout" element={<AdminLayoutDigitizerPage />} />
+            <Route path="/admin/coming-soon" element={<AdminLayoutDigitizerPage />} />
+            <Route path="/admin/preview" element={<AdminComingSoonPage />} />
 
             {/* Patient navigation & legacy route aliases */}
             <Route path="/purpose" element={<PurposePage />} />
