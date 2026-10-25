@@ -27,6 +27,7 @@ import {
   ShieldCheck,
   Check,
   Lightbulb,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { BaseLayout } from '../../components/layout';
@@ -81,22 +82,25 @@ export function PatientVisitPage() {
   // All departments from mock service
   const [departments, setDepartments] = useState<Department[]>([]);
 
-  // Form State
+  // Form State: For guests, do not pre-fill any fields so they MUST enter & select their options
   const [visitData, setVisitData] = useState<PatientVisitData>(() => {
-    // Auto-fill from registered profile if available
-    const isRegistered = user && !user.isGuest;
+    const isRegistered = user && !user.isGuest && user.role !== 'staff';
     return {
-      patientName: isRegistered ? user.name : '',
-      patientAge: isRegistered && user.age ? user.age : '',
+      patientName: isRegistered && user.name !== 'Patient' && user.name !== 'Registered Patient' ? user.name : '',
+      patientAge: isRegistered && user.age !== undefined && user.age !== null ? user.age : '',
       patientGender: (isRegistered && user.gender ? user.gender.toLowerCase() : '') as any,
-      accessibilityNeeds: ['none'],
-      purposeId: 'consultation',
-      departmentId: 'opd-general',
+      accessibilityNeeds: isRegistered ? ['none'] : [],
+      purposeId: isRegistered ? 'consultation' : ('' as any),
+      departmentId: isRegistered ? 'opd-general' : '',
       symptoms: '',
       email: isRegistered && user?.email ? user.email : '',
       abhaId: isRegistered && user?.abhaId ? user.abhaId : '',
     };
   });
+
+  // Validation States
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; age?: string; gender?: string }>({});
+  const [stepError, setStepError] = useState<string>('');
 
   // Flow Step: 1 = Basic Details, 2 = Accessibility, 3 = Purpose, 4 = Department, 5 = Review
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -150,8 +154,34 @@ export function PatientVisitPage() {
   // Determine whether department selection step is needed
   // (Always needed for consultation and follow_up; for others, default department matches)
   const isDepartmentStepNeeded = useMemo(() => {
-    return visitData.purposeId === 'consultation' || visitData.purposeId === 'follow_up';
+    return !visitData.purposeId || visitData.purposeId === 'consultation' || visitData.purposeId === 'follow_up';
   }, [visitData.purposeId]);
+
+  // Step validation state checker
+  const isCurrentStepValid = useMemo(() => {
+    if (currentStep === 1) {
+      const hasName = Boolean(visitData.patientName && visitData.patientName.trim().length > 0);
+      const ageNum = Number(visitData.patientAge);
+      const hasAge =
+        visitData.patientAge !== '' &&
+        visitData.patientAge !== undefined &&
+        !isNaN(ageNum) &&
+        ageNum >= 1 &&
+        ageNum <= 125;
+      const hasGender = Boolean(visitData.patientGender);
+      return hasName && hasAge && hasGender;
+    }
+    if (currentStep === 2) {
+      return Boolean(visitData.accessibilityNeeds && visitData.accessibilityNeeds.length > 0);
+    }
+    if (currentStep === 3) {
+      return Boolean(visitData.purposeId);
+    }
+    if (currentStep === 4) {
+      return Boolean(visitData.departmentId);
+    }
+    return true;
+  }, [currentStep, visitData]);
 
   // Calculate dynamic steps
   const totalSteps = isDepartmentStepNeeded ? 5 : 4;
@@ -191,6 +221,7 @@ export function PatientVisitPage() {
 
   // Step 2 Accessibility handler
   const toggleAccessibilityNeed = (id: AccessibilityNeedId) => {
+    setStepError('');
     setVisitData((prev) => {
       let nextNeeds: AccessibilityNeedId[] = [...prev.accessibilityNeeds];
       if (id === 'none') {
@@ -199,7 +230,6 @@ export function PatientVisitPage() {
         nextNeeds = nextNeeds.filter((n) => n !== 'none');
         if (nextNeeds.includes(id)) {
           nextNeeds = nextNeeds.filter((n) => n !== id);
-          if (nextNeeds.length === 0) nextNeeds = ['none'];
         } else {
           nextNeeds.push(id);
         }
@@ -210,8 +240,8 @@ export function PatientVisitPage() {
 
   // Step 3 Purpose handler
   const handleSelectPurpose = (purposeId: VisitPurposeId) => {
-    // Automatically preset reasonable default department
-    let defaultDept = 'opd-general';
+    setStepError('');
+    let defaultDept = '';
     if (purposeId === 'lab_test') defaultDept = 'lab-blood';
     if (purposeId === 'pharmacy') defaultDept = 'pharmacy';
     if (purposeId === 'admission_visitor') defaultDept = 'admission';
@@ -238,6 +268,7 @@ export function PatientVisitPage() {
   };
 
   const handleApplySymptomDepartment = (dept: Department) => {
+    setStepError('');
     setVisitData((prev) => ({
       ...prev,
       departmentId: dept.id,
@@ -248,12 +279,36 @@ export function PatientVisitPage() {
     setCurrentStep(5);
   };
 
-  // Navigation handlers
+  // Navigation handlers with strict required field validation
   const handleNext = () => {
+    setStepError('');
+
     if (currentStep === 1) {
-      if (!visitData.patientName.trim()) {
-        setVisitData((prev) => ({ ...prev, patientName: user?.isGuest ? 'Guest Patient' : (user?.name || 'Patient') }));
+      const errors: { name?: string; age?: string; gender?: string } = {};
+      const cleanName = visitData.patientName.trim();
+      if (!cleanName) {
+        errors.name = 'Patient full name is required to proceed.';
       }
+      if (
+        visitData.patientAge === '' ||
+        visitData.patientAge === undefined ||
+        isNaN(Number(visitData.patientAge)) ||
+        Number(visitData.patientAge) < 1 ||
+        Number(visitData.patientAge) > 125
+      ) {
+        errors.age = 'Please enter a valid age between 1 and 125 years.';
+      }
+      if (!visitData.patientGender) {
+        errors.gender = 'Please select your gender.';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        setStepError('Please complete all required fields (* Name, Age, Gender) to proceed.');
+        return;
+      }
+      setFieldErrors({});
+
       // Update registered user profile with entered details immediately
       if (user && !user.isGuest) {
         const profileUpdates: Partial<UserProfile> = {};
@@ -283,19 +338,32 @@ export function PatientVisitPage() {
       }
       setCurrentStep(2);
     } else if (currentStep === 2) {
+      if (!visitData.accessibilityNeeds || visitData.accessibilityNeeds.length === 0) {
+        setStepError('Please select at least one accessibility option (or choose "None / No special assistance" if none apply).');
+        return;
+      }
       setCurrentStep(3);
     } else if (currentStep === 3) {
+      if (!visitData.purposeId) {
+        setStepError('Please select the purpose of your hospital visit.');
+        return;
+      }
       if (isDepartmentStepNeeded) {
         setCurrentStep(4);
       } else {
         setCurrentStep(5); // Skip directly to review
       }
     } else if (currentStep === 4) {
+      if (!visitData.departmentId) {
+        setStepError('Please select a hospital department or consultation specialty to proceed.');
+        return;
+      }
       setCurrentStep(5);
     }
   };
 
   const handleBack = () => {
+    setStepError('');
     if (currentStep === 1) {
       navigate('/patient/start');
     } else if (currentStep === 2) {
@@ -313,8 +381,39 @@ export function PatientVisitPage() {
     }
   };
 
-  // Generate slip
+  // Generate slip with strict final validation
   const handleGenerateSlip = async () => {
+    if (
+      !visitData.patientName?.trim() ||
+      !visitData.patientGender ||
+      visitData.patientAge === '' ||
+      visitData.patientAge === undefined
+    ) {
+      setCurrentStep(1);
+      setFieldErrors({
+        name: !visitData.patientName?.trim() ? 'Patient name is required.' : undefined,
+        age: visitData.patientAge === '' || visitData.patientAge === undefined ? 'Valid age is required.' : undefined,
+        gender: !visitData.patientGender ? 'Gender selection is required.' : undefined,
+      });
+      setStepError('Please complete all required fields (* Name, Age, Gender) to generate your slip.');
+      return;
+    }
+    if (!visitData.accessibilityNeeds || visitData.accessibilityNeeds.length === 0) {
+      setCurrentStep(2);
+      setStepError('Please select an accessibility option or choose "No special assistance needed".');
+      return;
+    }
+    if (!visitData.purposeId) {
+      setCurrentStep(3);
+      setStepError('Please select the purpose of your hospital visit.');
+      return;
+    }
+    if (isDepartmentStepNeeded && !visitData.departmentId) {
+      setCurrentStep(4);
+      setStepError('Please select a department to proceed.');
+      return;
+    }
+
     try {
       setGenerating(true);
       if (user && !user.isGuest) {
@@ -322,7 +421,7 @@ export function PatientVisitPage() {
         if (visitData.patientName?.trim() && visitData.patientName.trim() !== 'Patient') {
           profileUpdates.name = visitData.patientName.trim();
         }
-        if (visitData.patientAge !== '' && visitData.patientAge !== undefined && !isNaN(Number(visitData.patientAge))) {
+        if (visitData.patientAge !== undefined && !isNaN(Number(visitData.patientAge))) {
           profileUpdates.age = Number(visitData.patientAge);
         }
         if (visitData.patientGender) {
@@ -455,6 +554,26 @@ export function PatientVisitPage() {
               />
             )}
 
+            {/* Guest user instructions banner */}
+            {(!user || user.isGuest) && (
+              <OptionCard
+                as="div"
+                icon={<User size={22} className="text-[var(--color-primary-500)]" aria-hidden="true" />}
+                iconBgClass="bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                title="Guest Patient Details Required"
+                description="Please fill in your name, age, and gender below. You must complete all required fields (* Name, Age, Gender) to generate your slip."
+                className="bg-[var(--color-surface)] border-2 border-[var(--color-border)]"
+              />
+            )}
+
+            {/* Step 1 Error Alert Banner */}
+            {stepError && currentStep === 1 && (
+              <div className="p-3.5 bg-red-50 border-2 border-red-300 rounded-xl text-xs sm:text-sm font-bold text-red-800 flex items-center gap-2.5 animate-fadeIn">
+                <AlertTriangle size={18} className="text-red-600 shrink-0" aria-hidden="true" />
+                <span>{stepError}</span>
+              </div>
+            )}
+
             <Card className="p-4 sm:p-6 border-2 border-[var(--color-border)] min-w-0 shadow-sm">
               <form
                 onSubmit={(e) => {
@@ -466,12 +585,22 @@ export function PatientVisitPage() {
                 {/* Name */}
                 <Input
                   id="visit-patient-name"
-                  label={t('patient_visit.name_label')}
+                  label={
+                    <span className="flex items-center gap-1">
+                      <span>{t('patient_visit.name_label')}</span>
+                      <span className="text-red-500 font-black">*</span>
+                    </span>
+                  }
                   placeholder={t('patient_visit.name_placeholder')}
                   hint={t('patient_visit.name_hint')}
                   value={visitData.patientName}
-                  onChange={(e) => setVisitData({ ...visitData, patientName: e.target.value })}
-                  required={false}
+                  onChange={(e) => {
+                    setVisitData({ ...visitData, patientName: e.target.value });
+                    if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: '' }));
+                    if (stepError) setStepError('');
+                  }}
+                  error={fieldErrors.name}
+                  required
                 />
 
                 {/* Age & Gender in responsive grid */}
@@ -481,21 +610,31 @@ export function PatientVisitPage() {
                     type="number"
                     min={1}
                     max={125}
-                    label={t('patient_visit.age_label')}
+                    label={
+                      <span className="flex items-center gap-1">
+                        <span>{t('patient_visit.age_label')}</span>
+                        <span className="text-red-500 font-black">*</span>
+                      </span>
+                    }
                     placeholder={t('patient_visit.age_placeholder')}
                     value={visitData.patientAge === '' ? '' : String(visitData.patientAge)}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setVisitData({
                         ...visitData,
                         patientAge: e.target.value ? Number(e.target.value) : '',
-                      })
-                    }
+                      });
+                      if (fieldErrors.age) setFieldErrors((prev) => ({ ...prev, age: '' }));
+                      if (stepError) setStepError('');
+                    }}
+                    error={fieldErrors.age}
+                    required
                   />
 
                   {/* Gender Selector */}
                   <div className="min-w-0">
                     <label className="block font-semibold mb-2 text-sm sm:text-base text-[var(--color-text)]">
-                      {t('patient_visit.gender_label')}
+                      <span>{t('patient_visit.gender_label')}</span>
+                      <span className="text-red-500 font-black ml-1">*</span>
                     </label>
                     <div className="grid grid-cols-3 gap-2 min-w-0" role="group">
                       {(['male', 'female', 'other'] as const).map((genderOption) => {
@@ -504,12 +643,19 @@ export function PatientVisitPage() {
                           <button
                             key={genderOption}
                             type="button"
-                            onClick={() => setVisitData({ ...visitData, patientGender: genderOption })}
+                            onClick={() => {
+                              setVisitData({ ...visitData, patientGender: genderOption });
+                              if (fieldErrors.gender) setFieldErrors((prev) => ({ ...prev, gender: '' }));
+                              if (stepError) setStepError('');
+                            }}
                             className={[
                               'btn btn-sm py-2.5 h-auto min-h-[3rem] text-xs sm:text-sm font-bold min-w-0',
                               isSelected
                                 ? 'btn-primary shadow-sm'
                                 : 'btn-ghost border border-[var(--color-border)]',
+                              fieldErrors.gender && !visitData.patientGender
+                                ? 'border-red-400 bg-red-50/40 text-red-700'
+                                : '',
                             ].join(' ')}
                             aria-pressed={isSelected}
                           >
@@ -520,6 +666,12 @@ export function PatientVisitPage() {
                         );
                       })}
                     </div>
+                    {fieldErrors.gender && (
+                      <p className="text-xs font-bold text-red-600 mt-1.5 flex items-center gap-1">
+                        <AlertTriangle size={13} className="shrink-0" />
+                        {fieldErrors.gender}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -577,6 +729,14 @@ export function PatientVisitPage() {
                 {t('patient_visit.step2_subtitle')}
               </p>
             </div>
+
+            {/* Step 2 Error Alert Banner */}
+            {stepError && currentStep === 2 && (
+              <div className="p-3.5 bg-red-50 border-2 border-red-300 rounded-xl text-xs sm:text-sm font-bold text-red-800 flex items-center gap-2.5 animate-fadeIn">
+                <AlertTriangle size={18} className="text-red-600 shrink-0" aria-hidden="true" />
+                <span>{stepError}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 min-w-0" role="group">
               {[
@@ -665,6 +825,14 @@ export function PatientVisitPage() {
                 {t('patient_visit.step3_subtitle')}
               </p>
             </div>
+
+            {/* Step 3 Error Alert Banner */}
+            {stepError && currentStep === 3 && (
+              <div className="p-3.5 bg-red-50 border-2 border-red-300 rounded-xl text-xs sm:text-sm font-bold text-red-800 flex items-center gap-2.5 animate-fadeIn">
+                <AlertTriangle size={18} className="text-red-600 shrink-0" aria-hidden="true" />
+                <span>{stepError}</span>
+              </div>
+            )}
 
             {/* Pinned Emergency Card */}
             <EmergencyCard to="/patient/emergency" />
@@ -756,6 +924,14 @@ export function PatientVisitPage() {
                 {t('patient_visit.step4_subtitle')}
               </p>
             </div>
+
+            {/* Step 4 Error Alert Banner */}
+            {stepError && currentStep === 4 && (
+              <div className="p-3.5 bg-red-50 border-2 border-red-300 rounded-xl text-xs sm:text-sm font-bold text-red-800 flex items-center gap-2.5 animate-fadeIn">
+                <AlertTriangle size={18} className="text-red-600 shrink-0" aria-hidden="true" />
+                <span>{stepError}</span>
+              </div>
+            )}
 
             {/* "I don't know – help me choose" Card / CTA */}
             <OptionCard
@@ -903,13 +1079,14 @@ export function PatientVisitPage() {
                       role="radio"
                       ariaChecked={isSelected}
                       selected={isSelected}
-                      onClick={() =>
+                      onClick={() => {
+                        setStepError('');
                         setVisitData({
                           ...visitData,
                           departmentId: dept.id,
                           doctorName: dept.doctorName,
-                        })
-                      }
+                        });
+                      }}
                       icon={<Stethoscope size={24} aria-hidden="true" />}
                       title={t(dept.nameKey)}
                       description={dept.doctorName}
@@ -1129,17 +1306,28 @@ export function PatientVisitPage() {
           </Button>
 
           {currentStep < 5 ? (
-            <Button
-              type="button"
-              variant="primary"
-              size="lg"
-              icon={<ArrowRight size={20} />}
-              iconPosition="right"
-              onClick={handleNext}
-              className="sm:w-2/3 min-w-0 min-h-[3.5rem] text-base sm:text-lg font-extrabold shadow-md"
-            >
-              {t('patient_visit.next_btn')}
-            </Button>
+            <div className="sm:w-2/3 flex flex-col gap-1">
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                icon={<ArrowRight size={20} />}
+                iconPosition="right"
+                onClick={handleNext}
+                className={[
+                  'w-full min-w-0 min-h-[3.5rem] text-base sm:text-lg font-extrabold shadow-md transition-all',
+                  !isCurrentStepValid ? 'opacity-90 border-2 border-[var(--color-primary-400)]' : '',
+                ].join(' ')}
+              >
+                {t('patient_visit.next_btn')}
+              </Button>
+              {!isCurrentStepValid && (
+                <span className="text-[11px] font-bold text-amber-600 text-center flex items-center justify-center gap-1">
+                  <AlertTriangle size={12} />
+                  Please complete required selection above to proceed
+                </span>
+              )}
+            </div>
           ) : (
             <Button
               type="button"
