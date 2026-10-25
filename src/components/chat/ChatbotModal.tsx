@@ -84,6 +84,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [speakReplies, setSpeakReplies] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem(SPEAK_REPLIES_KEY) === 'true';
@@ -134,6 +135,9 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
 
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
+          textToSpeech.stop();
+          speechToText.stop();
+          setSpeakingMessageId(null);
           onClose();
         }
       };
@@ -142,6 +146,9 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
       return () => {
         document.body.style.overflow = originalOverflow;
         window.removeEventListener('keydown', handleKeyDown);
+        textToSpeech.stop();
+        speechToText.stop();
+        setSpeakingMessageId(null);
       };
     }
   }, [isOpen, onClose]);
@@ -159,7 +166,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
 
   // Send message
   const handleSendMessage = useCallback(
-    async (textToSend?: string, requestedLanguage = currentLang) => {
+    async (textToSend?: string, requestedLanguage = currentLang, isVoiceQuery = false) => {
       const text = (textToSend || inputMessage).trim();
       if (!text) return;
 
@@ -206,10 +213,16 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
 
         setMessages((prev) => [...prev, botMsg]);
 
-        // Speak aloud if speak replies toggle is active
-        if (speakReplies) {
+        // If the user asked via VOICE INPUT or has speakReplies turned on, speak aloud immediately!
+        if (isVoiceQuery || speakReplies) {
+          textToSpeech.stop();
+          setSpeakingMessageId(botMsg.id);
           textToSpeech.speak(response.text, response.language || currentLang, {
-            onError: () => setVoiceError('Voice reply is unavailable. You can still read the answer on screen.'),
+            onEnd: () => setSpeakingMessageId(null),
+            onError: () => {
+              setSpeakingMessageId(null);
+              setVoiceError('Voice reply is unavailable. You can still read the answer on screen.');
+            },
           });
         }
       } catch (err) {
@@ -247,9 +260,12 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
           setInputMessage(transcript);
           if (isFinal) {
             setIsListening(false);
-            // A completed recording is a complete voice query: send it straight
-            // to the hospital assistant so the user does not need to find Send.
-            handleSendMessage(transcript, detectedLanguage && detectedLanguage !== 'unknown' ? detectedLanguage : currentLang);
+            // A completed voice recording is a voice query: send it to Groq and speak answer back!
+            handleSendMessage(
+              transcript,
+              detectedLanguage && detectedLanguage !== 'unknown' ? detectedLanguage : currentLang,
+              true /* isVoiceQuery */
+            );
           }
         },
         (error) => {
@@ -267,6 +283,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
     localStorage.setItem(SPEAK_REPLIES_KEY, String(nextVal));
     if (!nextVal) {
       textToSpeech.stop();
+      setSpeakingMessageId(null);
     }
   };
 
@@ -274,6 +291,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
   const handleClearChat = () => {
     sessionStorage.removeItem(STORAGE_KEY);
     textToSpeech.stop();
+    setSpeakingMessageId(null);
     const freshGreeting: ChatMessage = {
       id: `initial-greeting-${Date.now()}`,
       sender: 'bot',
@@ -293,22 +311,35 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
     setMessages([freshGreeting]);
   };
 
-  // Read message aloud
+  // Read message aloud or stop reading
   const handleSpeakSingleMessage = (msg: ChatMessage) => {
+    if (speakingMessageId === msg.id) {
+      textToSpeech.stop();
+      setSpeakingMessageId(null);
+      return;
+    }
     setVoiceError(null);
+    textToSpeech.stop();
+    setSpeakingMessageId(msg.id);
     textToSpeech.speak(msg.text, msg.language || currentLang, {
-      onError: () => setVoiceError('Voice reply is unavailable. You can still read the answer on screen.'),
+      onEnd: () => setSpeakingMessageId(null),
+      onError: () => {
+        setSpeakingMessageId(null);
+        setVoiceError('Voice reply is unavailable. You can still read the answer on screen.');
+      },
     });
   };
 
-  // Quick reply click
+  // Quick reply click (search / text query)
   const handleQuickReply = (query: string) => {
-    handleSendMessage(query);
+    handleSendMessage(query, currentLang, false /* isVoiceQuery: false */);
   };
 
   // Action button click
   const handleActionClick = (route: string) => {
     textToSpeech.stop();
+    speechToText.stop();
+    setSpeakingMessageId(null);
     onClose();
     navigate(route);
   };
@@ -457,11 +488,25 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
                     <button
                       type="button"
                       onClick={() => handleSpeakSingleMessage(msg)}
-                      className="text-[11px] font-bold text-[var(--color-text-muted)] hover:text-[var(--color-primary-500)] flex items-center gap-1 transition-colors"
-                      title="Read aloud"
+                      className={[
+                        'text-[11px] font-bold flex items-center gap-1.5 px-2 py-0.5 rounded-md transition-colors',
+                        speakingMessageId === msg.id
+                          ? 'bg-[var(--color-primary-100)] text-[var(--color-primary-700)] dark:bg-[var(--color-primary-950)] dark:text-[var(--color-primary-300)] animate-pulse'
+                          : 'text-[var(--color-text-muted)] hover:text-[var(--color-primary-500)]',
+                      ].join(' ')}
+                      title={speakingMessageId === msg.id ? 'Stop audio' : 'Read aloud'}
                     >
-                      <Volume2 size={13} />
-                      <span>Read aloud</span>
+                      {speakingMessageId === msg.id ? (
+                        <>
+                          <VolumeX size={13} className="text-red-500" />
+                          <span className="text-red-600 dark:text-red-400 font-black">Speaking… (tap to stop)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 size={13} />
+                          <span>Read aloud</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 )}

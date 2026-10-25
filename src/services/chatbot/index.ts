@@ -6,7 +6,7 @@
 
 import type { ChatProvider } from './provider';
 import { MockChatProvider } from './mockProvider';
-import { HttpChatProvider } from './httpProvider';
+import { GroqChatProvider } from './groqProvider';
 import type { ChatRequest, ChatResponse } from './types';
 
 export * from './types';
@@ -14,15 +14,19 @@ export * from './provider';
 export * from './mockProvider';
 export * from './httpProvider';
 export * from './sarvamProvider';
+export * from './groqProvider';
+export * from './hospitalKnowledge';
 
 function createChatProvider(): ChatProvider {
   const providerType = (import.meta.env.VITE_CHAT_PROVIDER || 'http').toLowerCase();
 
-  if (providerType === 'http') {
-    return new HttpChatProvider();
+  if (providerType === 'mock') {
+    return new MockChatProvider();
   }
 
-  return new MockChatProvider();
+  // Both 'http' and 'groq' use GroqChatProvider, which tries /api/chat first
+  // and automatically fails over to direct Groq API with zero downtime.
+  return new GroqChatProvider();
 }
 
 export const chatProvider: ChatProvider = createChatProvider();

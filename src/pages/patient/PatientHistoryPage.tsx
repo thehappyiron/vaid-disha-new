@@ -29,6 +29,8 @@ import {
   fetchSupabaseSlips,
   fetchSupabaseVisits,
   fetchSupabaseReports,
+  subscribeToRealtimeSlips,
+  subscribeToRealtimeVisits,
 } from '../../services/supabaseClient';
 import type { Slip, VisitRecord, MedicalReport } from '../../types';
 
@@ -42,8 +44,10 @@ export function PatientHistoryPage() {
   const [cloudVisits, setCloudVisits] = useState<VisitRecord[]>([]);
   const [cloudReports, setCloudReports] = useState<MedicalReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [nameInput, setNameInput] = useState('');
+  const [ageInput, setAgeInput] = useState<number | ''>('');
+  const [genderInput, setGenderInput] = useState<string>('');
 
   // Determine authentic patient name
   const authenticatedName = useMemo(() => {
@@ -67,34 +71,77 @@ export function PatientHistoryPage() {
   }, [user, authenticatedName, updateUserProfile]);
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadData() {
       try {
         setLoading(true);
-        const [localSlips, cloudSlips] = await Promise.all([
-          getPatientSlipHistory(user?.id),
-          fetchSupabaseSlips(user?.id),
+        const [cloudSlips, localSlips] = await Promise.all([
+          fetchSupabaseSlips(user?.id, user?.email, user?.phone),
+          getPatientSlipHistory(user?.id, user?.email),
         ]);
         const slipMap = new Map<string, Slip>();
         for (const s of cloudSlips) slipMap.set(s.token || s.id, s);
-        for (const s of localSlips) slipMap.set(s.token || s.id, s);
-        setSlips(Array.from(slipMap.values()));
+        for (const s of localSlips) {
+          const key = s.token || s.id;
+          if (!slipMap.has(key)) slipMap.set(key, s);
+        }
+
+        if (isMounted) {
+          setSlips(Array.from(slipMap.values()));
+        }
 
         if (user?.id) {
           const [vData, rData] = await Promise.all([
-            fetchSupabaseVisits(user.id),
+            fetchSupabaseVisits(user.id, user.email),
             fetchSupabaseReports(user.id),
           ]);
-          if (vData.length > 0) setCloudVisits(vData);
-          if (rData.length > 0) setCloudReports(rData);
+          if (isMounted) {
+            if (vData.length > 0) setCloudVisits(vData);
+            if (rData.length > 0) setCloudReports(rData);
+          }
         }
       } catch (err) {
         console.warn('Failed to load history', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
+
     loadData();
-  }, [user]);
+
+    // Setup Supabase Realtime subscriptions for live synchronization
+    const unsubscribeSlips = subscribeToRealtimeSlips(user?.id, user?.email, (newOrUpdatedSlip) => {
+      if (!isMounted) return;
+      setSlips((prev) => {
+        const map = new Map<string, Slip>();
+        map.set(newOrUpdatedSlip.token || newOrUpdatedSlip.id, newOrUpdatedSlip);
+        for (const s of prev) {
+          const key = s.token || s.id;
+          if (!map.has(key)) map.set(key, s);
+        }
+        return Array.from(map.values());
+      });
+    });
+
+    const unsubscribeVisits = subscribeToRealtimeVisits(user?.id, (newOrUpdatedVisit) => {
+      if (!isMounted) return;
+      setCloudVisits((prev) => {
+        const map = new Map<string, VisitRecord>();
+        map.set(newOrUpdatedVisit.id, newOrUpdatedVisit);
+        for (const v of prev) {
+          if (!map.has(v.id)) map.set(v.id, v);
+        }
+        return Array.from(map.values());
+      });
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribeSlips();
+      unsubscribeVisits();
+    };
+  }, [user?.id, user?.email, user?.phone]);
 
   // Combine user visits & reports
   const pastVisits: VisitRecord[] = cloudVisits.length > 0 ? cloudVisits : (user?.visits || []);
@@ -137,79 +184,138 @@ export function PatientHistoryPage() {
         {/* ── REGISTERED USER PROFILE BANNER ──────────────────────────── */}
         {!isGuest && user && (
           <div className="bg-[var(--color-surface)] border-2 border-[var(--color-border)] rounded-2xl p-4 sm:p-5 flex flex-col gap-3 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary-500)] text-white flex items-center justify-center font-bold text-lg shadow-sm shrink-0">
                   <User size={24} aria-hidden="true" />
                 </div>
                 <div>
-                  {isEditingName ? (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        if (nameInput.trim()) {
-                          updateUserProfile({ name: nameInput.trim() });
-                          setIsEditingName(false);
-                        }
-                      }}
-                      className="flex items-center gap-2 mt-0.5"
-                    >
-                      <input
-                        type="text"
-                        value={nameInput}
-                        onChange={(e) => setNameInput(e.target.value)}
-                        placeholder="Enter your name"
-                        className="px-2.5 py-1 text-base font-black rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
-                        autoFocus
-                      />
-                      <button
-                        type="submit"
-                        className="p-1.5 rounded-lg bg-[var(--color-primary-500)] text-white hover:brightness-110"
-                        title="Save name"
-                      >
-                        <Check size={16} />
-                      </button>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-black text-xl text-[var(--color-text)] tracking-tight">
+                      {authenticatedName}
+                    </h2>
+                    {!isEditingProfile && (
                       <button
                         type="button"
                         onClick={() => {
                           setNameInput(authenticatedName);
-                          setIsEditingName(false);
-                        }}
-                        className="p-1.5 rounded-lg bg-gray-200 dark:bg-gray-700 text-[var(--color-text-muted)] hover:brightness-110 text-xs"
-                      >
-                        Cancel
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <h2 className="font-black text-xl text-[var(--color-text)] tracking-tight">
-                        {authenticatedName}
-                      </h2>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNameInput(authenticatedName);
-                          setIsEditingName(true);
+                          setAgeInput(user.age !== undefined && user.age !== null ? user.age : '');
+                          setGenderInput(user.gender || '');
+                          setIsEditingProfile(true);
                         }}
                         className="p-1 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-surface-2)] transition-colors"
-                        title="Edit name"
-                        aria-label="Edit name"
+                        title="Edit profile"
+                        aria-label="Edit profile"
                       >
                         <Edit2 size={15} />
                       </button>
-                    </div>
-                  )}
-                  <p className="text-xs sm:text-sm font-semibold text-[var(--color-text-muted)] mt-1">
-                    Phone: {user.phone || '1234567890'} {user.email ? `• ${user.email}` : ''} • ABHA: {user.abhaId || '12-3456-7890-1234'}
+                    )}
+                  </div>
+                  <p className="text-xs font-mono font-semibold text-[var(--color-primary-600)] mt-0.5">
+                    Patient ID: {user.id}
                   </p>
                 </div>
               </div>
               <StatusBadge
                 variant="success"
                 icon={<CheckCircle2 size={13} />}
-                label={t('slip.registered_badge', 'Registered')}
+                label={t('slip.registered_badge', 'Registered Patient')}
               />
             </div>
+
+            {/* Profile Edit Form */}
+            {isEditingProfile ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (nameInput.trim()) {
+                    updateUserProfile({
+                      name: nameInput.trim(),
+                      age: ageInput !== '' ? Number(ageInput) : undefined,
+                      gender: genderInput || undefined,
+                    });
+                    setIsEditingProfile(false);
+                  }
+                }}
+                className="mt-2 pt-3 border-t border-[var(--color-border)] flex flex-col gap-3"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full px-3 py-2 text-sm font-semibold rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1">Age (years)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={120}
+                      value={ageInput}
+                      onChange={(e) => setAgeInput(e.target.value ? Number(e.target.value) : '')}
+                      placeholder="e.g. 25"
+                      className="w-full px-3 py-2 text-sm font-semibold rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--color-text-muted)] mb-1">Gender</label>
+                    <select
+                      value={genderInput}
+                      onChange={(e) => setGenderInput(e.target.value)}
+                      className="w-full px-3 py-2 text-sm font-semibold rounded-lg border-2 border-[var(--color-primary-500)] bg-[var(--color-surface)] text-[var(--color-text)] focus:outline-none"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingProfile(false)}
+                    className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-xs font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 rounded-lg bg-[var(--color-primary-500)] text-white text-xs font-bold hover:brightness-110 flex items-center gap-1.5 shadow-sm"
+                  >
+                    <Check size={14} /> Save to Cloud Profile
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* Profile Details Badges */
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[var(--color-border)] text-xs font-medium text-[var(--color-text-muted)]">
+                <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
+                  <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">Phone</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">{user.phone || '1234567890'}</span>
+                </div>
+                <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
+                  <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">Email</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">{user.email || 'None'}</span>
+                </div>
+                <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
+                  <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">Age & Gender</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">
+                    {user.age !== undefined && user.age !== null ? `${user.age} yrs` : 'Not set'} • {user.gender || 'Not set'}
+                  </span>
+                </div>
+                <div className="bg-[var(--color-surface-2)]/60 rounded-lg p-2 flex flex-col">
+                  <span className="font-bold text-[10px] uppercase text-[var(--color-text-muted)]">ABHA ID</span>
+                  <span className="font-semibold text-[var(--color-text)] truncate">{user.abhaId || '12-3456-7890-1234'}</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

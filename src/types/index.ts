@@ -49,6 +49,7 @@ export interface PatientVisitData {
   doctorName?: string;
   symptoms?: string;
   email?: string;
+  abhaId?: string;
 }
 
 export interface PurposeOption {
@@ -92,6 +93,7 @@ export interface Slip {
   isGuest?: boolean;
   userId?: string;
   patientEmail?: string;
+  abhaId?: string;
 }
 
 export interface WayfindingResult {

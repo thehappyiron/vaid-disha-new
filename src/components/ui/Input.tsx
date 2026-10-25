@@ -5,7 +5,7 @@ import { AlertCircle } from 'lucide-react';
 
 interface FieldProps {
   id: string;
-  label: string;
+  label: ReactNode;
   hint?: string;
   error?: string;
   required?: boolean;
@@ -51,7 +51,7 @@ export function Field({ id, label, hint, error, required, children }: FieldProps
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   id: string;
-  label: string;
+  label: ReactNode;
   hint?: string;
   error?: string;
 }

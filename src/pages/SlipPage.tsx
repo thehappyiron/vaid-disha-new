@@ -576,6 +576,16 @@ export function SlipPage() {
                   <span className="font-extrabold text-xl sm:text-2xl text-[var(--color-text)]">
                     {slip.patientName || 'Patient'}
                   </span>
+                  {(slip.patientAge || slip.patientGender) && (
+                    <span className="text-xs font-semibold text-[var(--color-text-muted)] mt-0.5">
+                      {slip.patientAge ? `${slip.patientAge} yrs` : ''} {slip.patientGender ? `• ${slip.patientGender}` : ''}
+                    </span>
+                  )}
+                  {slip.abhaId && (
+                    <span className="text-xs font-mono font-bold text-[var(--color-primary-600)] mt-0.5">
+                      ABHA: {slip.abhaId}
+                    </span>
+                  )}
                   <div className="mt-1">
                     {isGuestUser ? (
                       <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">

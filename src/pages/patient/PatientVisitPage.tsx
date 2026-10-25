@@ -50,6 +50,7 @@ import type {
   PatientVisitData,
   AccessibilityNeedId,
   VisitPurposeId,
+  UserProfile,
 } from '../../types';
 
 // Speech synthesis helper
@@ -93,6 +94,7 @@ export function PatientVisitPage() {
       departmentId: 'opd-general',
       symptoms: '',
       email: isRegistered && user?.email ? user.email : '',
+      abhaId: isRegistered && user?.abhaId ? user.abhaId : '',
     };
   });
 
@@ -122,6 +124,20 @@ export function PatientVisitPage() {
       isMounted = false;
     };
   }, []);
+
+  // Sync form with user profile if profile loads or updates asynchronously
+  useEffect(() => {
+    if (user && !user.isGuest) {
+      setVisitData((prev) => ({
+        ...prev,
+        patientName: prev.patientName || (user.name !== 'Patient' && user.name !== 'Registered Patient' ? user.name : ''),
+        patientAge: prev.patientAge !== '' ? prev.patientAge : (user.age !== undefined && user.age !== null ? user.age : ''),
+        patientGender: prev.patientGender || ((user.gender?.toLowerCase() as any) || ''),
+        email: prev.email || user.email || '',
+        abhaId: prev.abhaId || user.abhaId || '',
+      }));
+    }
+  }, [user]);
 
   // Stop text-to-speech on unmount or step change
   useEffect(() => {
@@ -235,9 +251,35 @@ export function PatientVisitPage() {
   // Navigation handlers
   const handleNext = () => {
     if (currentStep === 1) {
-      // Basic validation: default name if empty for guest
       if (!visitData.patientName.trim()) {
-        setVisitData((prev) => ({ ...prev, patientName: 'Guest Patient' }));
+        setVisitData((prev) => ({ ...prev, patientName: user?.isGuest ? 'Guest Patient' : (user?.name || 'Patient') }));
+      }
+      // Update registered user profile with entered details immediately
+      if (user && !user.isGuest) {
+        const profileUpdates: Partial<UserProfile> = {};
+        if (visitData.patientName?.trim() && visitData.patientName.trim() !== 'Patient') {
+          profileUpdates.name = visitData.patientName.trim();
+        }
+        if (visitData.patientAge !== '' && visitData.patientAge !== undefined && !isNaN(Number(visitData.patientAge))) {
+          profileUpdates.age = Number(visitData.patientAge);
+        }
+        if (visitData.patientGender) {
+          profileUpdates.gender =
+            visitData.patientGender === 'male'
+              ? 'Male'
+              : visitData.patientGender === 'female'
+              ? 'Female'
+              : 'Other';
+        }
+        if (visitData.email?.trim()) {
+          profileUpdates.email = visitData.email.trim().toLowerCase();
+        }
+        if (visitData.abhaId?.trim()) {
+          profileUpdates.abhaId = visitData.abhaId.trim();
+        }
+        if (Object.keys(profileUpdates).length > 0) {
+          updateUserProfile(profileUpdates);
+        }
       }
       setCurrentStep(2);
     } else if (currentStep === 2) {
@@ -275,8 +317,31 @@ export function PatientVisitPage() {
   const handleGenerateSlip = async () => {
     try {
       setGenerating(true);
-      if (visitData.patientName?.trim() && (!user?.name || user.name === 'Patient' || user.name === 'Registered Patient')) {
-        updateUserProfile({ name: visitData.patientName.trim() });
+      if (user && !user.isGuest) {
+        const profileUpdates: Partial<UserProfile> = {};
+        if (visitData.patientName?.trim() && visitData.patientName.trim() !== 'Patient') {
+          profileUpdates.name = visitData.patientName.trim();
+        }
+        if (visitData.patientAge !== '' && visitData.patientAge !== undefined && !isNaN(Number(visitData.patientAge))) {
+          profileUpdates.age = Number(visitData.patientAge);
+        }
+        if (visitData.patientGender) {
+          profileUpdates.gender =
+            visitData.patientGender === 'male'
+              ? 'Male'
+              : visitData.patientGender === 'female'
+              ? 'Female'
+              : 'Other';
+        }
+        if (visitData.email?.trim()) {
+          profileUpdates.email = visitData.email.trim().toLowerCase();
+        }
+        if (visitData.abhaId?.trim()) {
+          profileUpdates.abhaId = visitData.abhaId.trim();
+        }
+        if (Object.keys(profileUpdates).length > 0) {
+          updateUserProfile(profileUpdates);
+        }
       }
       const slip = await generateSlip(visitData);
       syncSlipToSupabase(slip);
@@ -467,6 +532,28 @@ export function PatientVisitPage() {
                   hint="We will send your OPD slip confirmation, live queue alerts, and visit reminders to this email."
                   value={visitData.email || ''}
                   onChange={(e) => setVisitData({ ...visitData, email: e.target.value.trim() })}
+                  required={false}
+                />
+
+                {/* ABHA Number (Ayushman Bharat Health Account - Optional) */}
+                <Input
+                  id="visit-patient-abha"
+                  type="text"
+                  label={
+                    <span className="flex items-center justify-between w-full">
+                      <span>{t('patient_visit.abha_label', 'ABHA Number')}</span>
+                      <span className="text-xs font-semibold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] dark:bg-[var(--color-primary-900)]/30 px-2 py-0.5 rounded-full border border-[var(--color-primary-200)]">
+                        Optional
+                      </span>
+                    </span>
+                  }
+                  placeholder={t('patient_visit.abha_placeholder', 'e.g. 12-3456-7890-1234 or 14-digit ABHA ID')}
+                  hint={t(
+                    'patient_visit.abha_hint',
+                    'Optional: Link your Ayushman Bharat Health Account for centralized digital health records.'
+                  )}
+                  value={visitData.abhaId || ''}
+                  onChange={(e) => setVisitData({ ...visitData, abhaId: e.target.value.trim() })}
                   required={false}
                 />
               </form>

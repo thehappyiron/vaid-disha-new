@@ -5,15 +5,16 @@
  * Preserves full backward-compatibility with existing `voiceService` calls.
  */
 
-import { SarvamSTT, SarvamTTS } from './sarvamVoice';
+import { FastSTT, FastTTS } from './fastVoice';
 import type { TextToSpeech, SpeechToText, VoiceOptions, VoiceAdapter } from './types';
 
 export * from './types';
 export * from './webSpeech';
 export * from './sarvamVoice';
+export * from './fastVoice';
 
-export const textToSpeech: TextToSpeech = new SarvamTTS();
-export const speechToText: SpeechToText = new SarvamSTT();
+export const textToSpeech: TextToSpeech = new FastTTS();
+export const speechToText: SpeechToText = new FastSTT();
 
 /**
  * Legacy voiceService adapter

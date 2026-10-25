@@ -12,7 +12,13 @@ import {
   createMockGuestUser,
 } from '../data/mockUserData';
 
-import { syncUserProfileToSupabase, fetchSupabaseUser } from '../services/supabaseClient';
+import {
+  syncUserProfileToSupabase,
+  fetchSupabaseUser,
+  fetchSupabaseUserByEmailOrPhone,
+  consolidateUserSlips,
+  subscribeToRealtimeUser,
+} from '../services/supabaseClient';
 
 export function deriveNameFromEmail(email?: string): string {
   if (!email) return 'Registered Patient';
@@ -36,7 +42,9 @@ interface AuthContextValue {
     phone: string,
     otp: string,
     email?: string,
-    name?: string
+    name?: string,
+    age?: number,
+    gender?: string
   ) => Promise<UserProfile>;
   loginAsGuest: () => UserProfile;
   loginAsStaff: (staffId: string, password?: string) => Promise<boolean>;
@@ -71,21 +79,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  // Attempt to refresh user data from Supabase in the background
+  // Attempt to refresh user data from Supabase and subscribe to realtime updates
   useEffect(() => {
-    if (user?.id && !user.isGuest) {
-      fetchSupabaseUser(user.id).then((cloudUser) => {
-        if (cloudUser && cloudUser.name && cloudUser.name !== 'Patient') {
-          setUser((prev) => (prev ? { ...prev, ...cloudUser } : cloudUser));
-        }
-      });
-    }
+    if (!user?.id || user.isGuest) return;
+
+    let isMounted = true;
+    fetchSupabaseUser(user.id).then((cloudUser) => {
+      if (cloudUser && isMounted) {
+        setUser((prev) => {
+          if (!prev) return cloudUser;
+          return {
+            ...prev,
+            ...cloudUser,
+            // Keep local age/name if cloud was null
+            age: cloudUser.age !== undefined ? cloudUser.age : prev.age,
+            name: cloudUser.name && cloudUser.name !== 'Patient' ? cloudUser.name : prev.name,
+          };
+        });
+      }
+    });
+
+    const unsubscribe = subscribeToRealtimeUser(user.id, (cloudUpdatedUser) => {
+      if (!isMounted) return;
+      setUser((prev) => (prev ? { ...prev, ...cloudUpdatedUser } : cloudUpdatedUser));
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [user?.id, user?.isGuest]);
 
   const updateUserProfile = (updates: Partial<UserProfile>) => {
     setUser((prev) => {
       if (!prev) return null;
       const updated = { ...prev, ...updates };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       syncUserProfileToSupabase(updated);
       return updated;
     });
@@ -95,34 +124,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     phone: string,
     _otp: string,
     email?: string,
-    name?: string
+    name?: string,
+    age?: number,
+    gender?: string
   ): Promise<UserProfile> => {
+    const cleanPhone = phone?.trim();
     const normalizedEmail = email?.trim().toLowerCase();
-    const patientId =
-      phone && MOCK_REGISTERED_PATIENT.phone === phone
-        ? MOCK_REGISTERED_PATIENT.id
-        : `pat-${phone.slice(-4)}-${Date.now().toString().slice(-5)}`;
 
-    // Determine clean authentic patient name
+    // 1. Check if user already exists in Supabase
+    let existingCloudUser: UserProfile | null = null;
+    if (normalizedEmail || cleanPhone) {
+      existingCloudUser = await fetchSupabaseUserByEmailOrPhone(normalizedEmail, cleanPhone);
+    }
+
+    // 2. Persistent stable ID: reuse existing ID or generate deterministic ID based on phone/email
+    let patientId = existingCloudUser?.id;
+    if (!patientId) {
+      if (cleanPhone && cleanPhone === MOCK_REGISTERED_PATIENT.phone) {
+        patientId = MOCK_REGISTERED_PATIENT.id;
+      } else if (cleanPhone && cleanPhone.length >= 10) {
+        patientId = `pat-${cleanPhone.slice(-10)}`;
+      } else if (normalizedEmail) {
+        patientId = `pat-${normalizedEmail.replace(/[^a-z0-9]/gi, '').slice(0, 10)}`;
+      } else {
+        patientId = `pat-${Date.now().toString().slice(-6)}`;
+      }
+    }
+
+    // 3. Determine clean authentic patient name
     const cleanName =
       name?.trim() ||
-      (phone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.name : '') ||
+      existingCloudUser?.name ||
+      (cleanPhone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.name : '') ||
       deriveNameFromEmail(normalizedEmail) ||
       'Registered Patient';
 
+    // 4. Determine actual age (DO NOT default to 68 for everyone!)
+    const resolvedAge =
+      age !== undefined && age !== null && !isNaN(Number(age))
+        ? Number(age)
+        : existingCloudUser?.age !== undefined && existingCloudUser?.age !== null
+        ? Number(existingCloudUser.age)
+        : cleanPhone === MOCK_REGISTERED_PATIENT.phone
+        ? MOCK_REGISTERED_PATIENT.age
+        : undefined;
+
+    // 5. Determine gender
+    const resolvedGender =
+      gender ||
+      existingCloudUser?.gender ||
+      (cleanPhone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.gender : undefined);
+
+    const isMockDemo = cleanPhone === MOCK_REGISTERED_PATIENT.phone;
+
     const registeredUser: UserProfile = {
-      ...MOCK_REGISTERED_PATIENT,
       id: patientId,
       name: cleanName,
-      phone: phone || MOCK_REGISTERED_PATIENT.phone,
-      email: normalizedEmail,
-      emailVerified: Boolean(normalizedEmail),
-      visits: phone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.visits : [],
-      reports: phone === MOCK_REGISTERED_PATIENT.phone ? MOCK_REGISTERED_PATIENT.reports : [],
+      phone: cleanPhone || existingCloudUser?.phone || (isMockDemo ? MOCK_REGISTERED_PATIENT.phone : undefined),
+      email: normalizedEmail || existingCloudUser?.email,
+      emailVerified: true,
+      role: 'registered',
+      isGuest: false,
+      age: resolvedAge,
+      gender: resolvedGender,
+      bloodGroup: existingCloudUser?.bloodGroup || (isMockDemo ? MOCK_REGISTERED_PATIENT.bloodGroup : undefined),
+      abhaId: existingCloudUser?.abhaId || (isMockDemo ? MOCK_REGISTERED_PATIENT.abhaId : undefined),
+      visits: existingCloudUser?.visits || (isMockDemo ? MOCK_REGISTERED_PATIENT.visits : []),
+      reports: existingCloudUser?.reports || (isMockDemo ? MOCK_REGISTERED_PATIENT.reports : []),
     };
 
     setUser(registeredUser);
-    syncUserProfileToSupabase(registeredUser);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredUser));
+    await syncUserProfileToSupabase(registeredUser);
+
+    // Consolidate any previous slips created with this email to the stable patientId
+    if (registeredUser.email) {
+      void consolidateUserSlips(registeredUser.id, registeredUser.email);
+    }
+
     return registeredUser;
   };
 

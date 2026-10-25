@@ -76,7 +76,7 @@ export async function fetchSupabaseUser(idOrPhone: string): Promise<UserProfile 
       emailVerified: Boolean(data.email_verified),
       role: data.role || 'registered',
       isGuest: Boolean(data.is_guest),
-      age: data.age || undefined,
+      age: data.age !== null && data.age !== undefined ? Number(data.age) : undefined,
       gender: data.gender || undefined,
       bloodGroup: data.blood_group || undefined,
       abhaId: data.abha_id || undefined,
@@ -86,6 +86,51 @@ export async function fetchSupabaseUser(idOrPhone: string): Promise<UserProfile 
     };
   } catch (err) {
     console.warn('[Supabase] Failed to fetch user from Supabase:', err);
+    return null;
+  }
+}
+
+/** Look up a registered user by email OR phone */
+export async function fetchSupabaseUserByEmailOrPhone(
+  email?: string,
+  phone?: string
+): Promise<UserProfile | null> {
+  if (!supabase) return null;
+  const cleanEmail = email?.trim().toLowerCase();
+  const cleanPhone = phone?.trim();
+  if (!cleanEmail && !cleanPhone) return null;
+
+  try {
+    let query = supabase.from('users').select('*');
+    if (cleanEmail && cleanPhone) {
+      query = query.or(`email.ilike.${cleanEmail},phone.eq.${cleanPhone}`);
+    } else if (cleanEmail) {
+      query = query.ilike('email', cleanEmail);
+    } else if (cleanPhone) {
+      query = query.eq('phone', cleanPhone);
+    }
+
+    const { data, error } = await query.order('updated_at', { ascending: false }).limit(1).maybeSingle();
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      name: data.name,
+      phone: data.phone || undefined,
+      email: data.email || undefined,
+      emailVerified: Boolean(data.email_verified),
+      role: data.role || 'registered',
+      isGuest: Boolean(data.is_guest),
+      age: data.age !== null && data.age !== undefined ? Number(data.age) : undefined,
+      gender: data.gender || undefined,
+      bloodGroup: data.blood_group || undefined,
+      abhaId: data.abha_id || undefined,
+      staffId: data.staff_id || undefined,
+      designation: data.designation || undefined,
+      department: data.department || undefined,
+    };
+  } catch (err) {
+    console.warn('[Supabase] Error looking up user by email or phone:', err);
     return null;
   }
 }
@@ -100,7 +145,8 @@ export async function checkEmailRegistered(email: string): Promise<UserProfile |
       const { data, error } = await supabase
         .from('users')
         .select('*')
-        .eq('email', cleanEmail)
+        .ilike('email', cleanEmail)
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -113,7 +159,7 @@ export async function checkEmailRegistered(email: string): Promise<UserProfile |
           emailVerified: Boolean(data.email_verified),
           role: data.role || 'registered',
           isGuest: Boolean(data.is_guest),
-          age: data.age || undefined,
+          age: data.age !== null && data.age !== undefined ? Number(data.age) : undefined,
           gender: data.gender || undefined,
           bloodGroup: data.blood_group || undefined,
           abhaId: data.abha_id || undefined,
@@ -140,6 +186,24 @@ export async function checkEmailRegistered(email: string): Promise<UserProfile |
   return null;
 }
 
+/** Consolidate any previous slips and visits created under old IDs to the user's permanent ID */
+export async function consolidateUserSlips(userId: string, email?: string): Promise<void> {
+  if (!supabase || !userId || !email) return;
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return;
+
+  try {
+    // Update slips with this email to the unified user_id
+    await supabase
+      .from('slips')
+      .update({ user_id: userId, updated_at: new Date().toISOString() })
+      .ilike('patient_email', cleanEmail)
+      .neq('user_id', userId);
+  } catch (err) {
+    console.warn('[Supabase] Could not consolidate slips:', err);
+  }
+}
+
 // ─── OPD SLIPS ──────────────────────────────────────────────────────────────
 
 export async function syncSlipToSupabase(slip: Slip): Promise<boolean> {
@@ -152,7 +216,7 @@ export async function syncSlipToSupabase(slip: Slip): Promise<boolean> {
       patient_name: slip.patientName || 'Patient',
       patient_age: slip.patientAge ? Number(slip.patientAge) : null,
       patient_gender: slip.patientGender || null,
-      patient_email: slip.patientEmail || null,
+      patient_email: slip.patientEmail ? slip.patientEmail.trim().toLowerCase() : null,
       department_id: slip.department?.id || null,
       department_name: slip.department?.nameKey || slip.patientPurposeKey || null,
       doctor_name: slip.doctorName || slip.department?.doctorName || null,
@@ -186,13 +250,80 @@ export async function syncSlipToSupabase(slip: Slip): Promise<boolean> {
   }
 }
 
-export async function fetchSupabaseSlips(userId?: string): Promise<Slip[]> {
+/** Retrieve single slip by ID or Token directly from Supabase */
+export async function fetchSupabaseSlipById(idOrToken: string): Promise<Slip | null> {
+  if (!supabase || !idOrToken) return null;
+  try {
+    const { data: row, error } = await supabase
+      .from('slips')
+      .select('*')
+      .or(`id.eq.${idOrToken},token.eq.${idOrToken}`)
+      .order('generated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !row) return null;
+
+    return {
+      id: row.id,
+      generatedAt: row.generated_at,
+      patientPurposeKey: row.purpose_id || 'consultation',
+      token: row.token,
+      estimatedWait: row.estimated_wait || 15,
+      peopleAhead: row.people_ahead,
+      status: row.status,
+      doctorName: row.doctor_name,
+      roomNumber: row.room_number,
+      floor: row.floor,
+      wing: row.wing,
+      humanReadableDirection: row.human_readable_direction,
+      patientName: row.patient_name,
+      patientAge: row.patient_age !== null && row.patient_age !== undefined ? Number(row.patient_age) : undefined,
+      patientGender: row.patient_gender,
+      patientEmail: row.patient_email,
+      accessibilityNeeds: row.accessibility_needs || [],
+      isGuest: Boolean(row.is_guest),
+      userId: row.user_id,
+      steps: Array.isArray(row.navigation_steps) ? row.navigation_steps : [],
+      department: {
+        id: row.department_id || 'dept-opd',
+        nameKey: row.department_name || 'General OPD',
+        descriptionKey: 'General physician consultation',
+        category: 'consultation',
+        building: 'Building A',
+        floor: row.floor || 0,
+        roomNumbers: row.room_number ? [row.room_number] : ['101'],
+        landmark: 'Near Main Entrance',
+        estimatedWalkMinutes: 2,
+        doctorName: row.doctor_name,
+        wing: row.wing,
+      },
+    };
+  } catch (err) {
+    console.warn('[Supabase] Failed to fetch slip by ID:', err);
+    return null;
+  }
+}
+
+/** Fetch all slips for a patient (querying across user_id, email, or phone) */
+export async function fetchSupabaseSlips(
+  userId?: string,
+  userEmail?: string,
+  _userPhone?: string
+): Promise<Slip[]> {
   if (!supabase) return [];
   try {
     let query = supabase.from('slips').select('*').order('generated_at', { ascending: false });
-    if (userId) {
+
+    const cleanEmail = userEmail?.trim().toLowerCase();
+    if (userId && cleanEmail) {
+      query = query.or(`user_id.eq.${userId},patient_email.ilike.${cleanEmail}`);
+    } else if (userId) {
       query = query.eq('user_id', userId);
+    } else if (cleanEmail) {
+      query = query.ilike('patient_email', cleanEmail);
     }
+
     const { data, error } = await query;
     if (error || !data) return [];
 
@@ -210,7 +341,7 @@ export async function fetchSupabaseSlips(userId?: string): Promise<Slip[]> {
       wing: row.wing,
       humanReadableDirection: row.human_readable_direction,
       patientName: row.patient_name,
-      patientAge: row.patient_age,
+      patientAge: row.patient_age !== null && row.patient_age !== undefined ? Number(row.patient_age) : undefined,
       patientGender: row.patient_gender,
       patientEmail: row.patient_email,
       accessibilityNeeds: row.accessibility_needs || [],
@@ -239,13 +370,21 @@ export async function fetchSupabaseSlips(userId?: string): Promise<Slip[]> {
 
 // ─── VISITS & REPORTS ───────────────────────────────────────────────────────
 
-export async function fetchSupabaseVisits(userId?: string): Promise<VisitRecord[]> {
+export async function fetchSupabaseVisits(
+  userId?: string,
+  userEmail?: string
+): Promise<VisitRecord[]> {
   if (!supabase) return [];
   try {
     let query = supabase.from('visits').select('*').order('created_at', { ascending: false });
-    if (userId) {
+    const cleanEmail = userEmail?.trim().toLowerCase();
+
+    if (userId && cleanEmail) {
+      query = query.or(`user_id.eq.${userId},patient_name.ilike.%${cleanEmail}%`);
+    } else if (userId) {
       query = query.eq('user_id', userId);
     }
+
     const { data, error } = await query;
     if (error || !data) return [];
 
@@ -264,7 +403,11 @@ export async function fetchSupabaseVisits(userId?: string): Promise<VisitRecord[
   }
 }
 
-export async function syncVisitToSupabase(visit: VisitRecord, userId: string): Promise<boolean> {
+export async function syncVisitToSupabase(
+  visit: VisitRecord,
+  userId: string,
+  patientName?: string
+): Promise<boolean> {
   if (!supabase || !visit?.id) return false;
   try {
     const { error } = await supabase.from('visits').upsert(
@@ -272,6 +415,7 @@ export async function syncVisitToSupabase(visit: VisitRecord, userId: string): P
         id: visit.id,
         user_id: userId,
         token_number: visit.tokenNumber,
+        patient_name: patientName || null,
         department_name: visit.departmentName,
         doctor_name: visit.doctorName,
         date: visit.date,
@@ -351,3 +495,173 @@ export async function logSupabaseEmail(
     return false;
   }
 }
+
+// ─── REALTIME DATABASE SUBSCRIPTIONS ────────────────────────────────────────
+
+/**
+ * Subscribe to realtime changes on the slips table.
+ * Invokes callback whenever a slip is inserted or updated.
+ */
+export function subscribeToRealtimeSlips(
+  userId?: string,
+  userEmail?: string,
+  onSlipChange?: (slip: Slip) => void
+): () => void {
+  if (!supabase || !onSlipChange) return () => {};
+
+  const cleanEmail = userEmail?.trim().toLowerCase();
+  const channelName = `realtime-slips-${userId || cleanEmail || 'all'}-${Date.now()}`;
+
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'slips' },
+      (payload) => {
+        const row: any = payload.new;
+        if (!row) return;
+
+        // Filter for this user/email if specified
+        if (userId && row.user_id && row.user_id === userId) {
+          // match
+        } else if (cleanEmail && row.patient_email && row.patient_email.trim().toLowerCase() === cleanEmail) {
+          // match
+        } else if (userId || cleanEmail) {
+          return;
+        }
+
+        const mappedSlip: Slip = {
+          id: row.id,
+          generatedAt: row.generated_at,
+          patientPurposeKey: row.purpose_id || 'consultation',
+          token: row.token,
+          estimatedWait: row.estimated_wait || 15,
+          peopleAhead: row.people_ahead,
+          status: row.status,
+          doctorName: row.doctor_name,
+          roomNumber: row.room_number,
+          floor: row.floor,
+          wing: row.wing,
+          humanReadableDirection: row.human_readable_direction,
+          patientName: row.patient_name,
+          patientAge: row.patient_age !== null && row.patient_age !== undefined ? Number(row.patient_age) : undefined,
+          patientGender: row.patient_gender,
+          patientEmail: row.patient_email,
+          accessibilityNeeds: row.accessibility_needs || [],
+          isGuest: Boolean(row.is_guest),
+          userId: row.user_id,
+          steps: Array.isArray(row.navigation_steps) ? row.navigation_steps : [],
+          department: {
+            id: row.department_id || 'dept-opd',
+            nameKey: row.department_name || 'General OPD',
+            descriptionKey: 'General physician consultation',
+            category: 'consultation',
+            building: 'Building A',
+            floor: row.floor || 0,
+            roomNumbers: row.room_number ? [row.room_number] : ['101'],
+            landmark: 'Near Main Entrance',
+            estimatedWalkMinutes: 2,
+            doctorName: row.doctor_name,
+            wing: row.wing,
+          },
+        };
+        onSlipChange(mappedSlip);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (supabase) {
+      supabase.removeChannel(channel);
+    }
+  };
+}
+
+/**
+ * Subscribe to realtime changes on the visits table.
+ */
+export function subscribeToRealtimeVisits(
+  userId?: string,
+  onVisitChange?: (visit: VisitRecord) => void
+): () => void {
+  if (!supabase || !onVisitChange) return () => {};
+
+  const channelName = `realtime-visits-${userId || 'all'}-${Date.now()}`;
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'visits' },
+      (payload) => {
+        const row: any = payload.new;
+        if (!row) return;
+        if (userId && row.user_id && row.user_id !== userId) return;
+
+        const mappedVisit: VisitRecord = {
+          id: row.id,
+          date: row.date,
+          departmentName: row.department_name,
+          doctorName: row.doctor_name,
+          tokenNumber: row.token_number,
+          diagnosisSummary: row.diagnosis_summary,
+          status: row.status as 'completed' | 'in_progress' | 'cancelled',
+        };
+        onVisitChange(mappedVisit);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (supabase) {
+      supabase.removeChannel(channel);
+    }
+  };
+}
+
+/**
+ * Subscribe to realtime changes on the user profile.
+ */
+export function subscribeToRealtimeUser(
+  userId: string,
+  onUserChange: (user: UserProfile) => void
+): () => void {
+  if (!supabase || !userId) return () => {};
+
+  const channelName = `realtime-user-${userId}-${Date.now()}`;
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'users', filter: `id=eq.${userId}` },
+      (payload) => {
+        const row: any = payload.new;
+        if (!row) return;
+
+        const updated: UserProfile = {
+          id: row.id,
+          name: row.name,
+          phone: row.phone || undefined,
+          email: row.email || undefined,
+          emailVerified: Boolean(row.email_verified),
+          role: row.role || 'registered',
+          isGuest: Boolean(row.is_guest),
+          age: row.age !== null && row.age !== undefined ? Number(row.age) : undefined,
+          gender: row.gender || undefined,
+          bloodGroup: row.blood_group || undefined,
+          abhaId: row.abha_id || undefined,
+          staffId: row.staff_id || undefined,
+          designation: row.designation || undefined,
+          department: row.department || undefined,
+        };
+        onUserChange(updated);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    if (supabase) {
+      supabase.removeChannel(channel);
+    }
+  };
+}
+
