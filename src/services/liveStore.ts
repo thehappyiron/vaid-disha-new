@@ -499,6 +499,12 @@ if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       if (event.data && event.data.type === 'LIVE_STORE_SYNC' && event.data.payload) {
         memoryState = event.data.payload;
         notifySubscribers();
+      } else if (event.data && event.data.type === 'NOTIFICATION_TOAST' && event.data.payload) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('vd_toast_notification', { detail: event.data.payload })
+          );
+        }
       }
     };
   } catch (err) {
@@ -1307,8 +1313,41 @@ export async function completePatientConsultation(token: string): Promise<void> 
   });
   const liveDept = memoryState.departments[entry.departmentId];
   if (liveDept) {
+    // Resolve patient email if missing on entry
+    let entryWithEmail = entry;
+    if (!entryWithEmail.email && typeof window !== 'undefined') {
+      try {
+        const latestRaw = localStorage.getItem('vd-latest-slip');
+        if (latestRaw) {
+          const latest = JSON.parse(latestRaw);
+          if (latest?.token?.toUpperCase() === norm && latest?.patientEmail) {
+            entryWithEmail = { ...entry, email: latest.patientEmail };
+          }
+        }
+        if (!entryWithEmail.email) {
+          const slipsRaw = localStorage.getItem('vd-patient-slips');
+          if (slipsRaw) {
+            const slips = JSON.parse(slipsRaw);
+            const match = slips.find((s: any) => s.token?.toUpperCase() === norm);
+            if (match?.patientEmail) {
+              entryWithEmail = { ...entry, email: match.patientEmail };
+            }
+          }
+        }
+        if (!entryWithEmail.email) {
+          const authRaw = localStorage.getItem('vd-auth-user');
+          if (authRaw) {
+            const authUser = JSON.parse(authRaw);
+            if (authUser?.email) {
+              entryWithEmail = { ...entry, email: authUser.email };
+            }
+          }
+        }
+      } catch {}
+    }
+
     void import('./emailService').then((mail) =>
-      mail.notifyVisitCompleted(entry, deptMailContext(liveDept))
+      mail.notifyVisitCompleted(entryWithEmail, deptMailContext(liveDept))
     );
   }
 }
@@ -1588,6 +1627,16 @@ export function emitNotificationToast(notification: PatientNotification) {
     window.dispatchEvent(
       new CustomEvent('vd_toast_notification', { detail: notification })
     );
+  }
+  if (broadcastChannel) {
+    try {
+      broadcastChannel.postMessage({
+        type: 'NOTIFICATION_TOAST',
+        payload: notification,
+      });
+    } catch (err) {
+      console.warn('Could not broadcast toast notification', err);
+    }
   }
 }
 

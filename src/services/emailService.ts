@@ -171,6 +171,25 @@ function recipientsForToken(token?: string | null, extraTo?: string): string[] {
   for (const attendant of contact?.attendantEmails || []) {
     if (isValidEmail(attendant)) emails.add(attendant);
   }
+  if (emails.size === 0 && token && typeof window !== 'undefined') {
+    try {
+      const latestRaw = localStorage.getItem('vd-latest-slip');
+      if (latestRaw) {
+        const latest = JSON.parse(latestRaw);
+        if (latest?.token?.toUpperCase() === token.toUpperCase() && latest?.patientEmail && isValidEmail(latest.patientEmail)) {
+          emails.add(latest.patientEmail.trim().toLowerCase());
+        }
+      }
+      const slipsRaw = localStorage.getItem('vd-patient-slips');
+      if (slipsRaw) {
+        const slips = JSON.parse(slipsRaw);
+        const match = slips.find((s: any) => s.token?.toUpperCase() === token.toUpperCase());
+        if (match?.patientEmail && isValidEmail(match.patientEmail)) {
+          emails.add(match.patientEmail.trim().toLowerCase());
+        }
+      }
+    } catch {}
+  }
   if (emails.size === 0) {
     const loggedIn = getLoggedInPatientEmail();
     if (loggedIn) emails.add(loggedIn);
@@ -651,9 +670,51 @@ export function notifyRoomChange(entries: QueueMailEntry[], dept: DeptMailContex
 export function notifyVisitCompleted(entry: QueueMailEntry, dept: DeptMailContext) {
   const created = entry.createdAt ? new Date(entry.createdAt).getTime() : Date.now() - 20 * 60 * 1000;
   const waitMinutes = Math.max(1, Math.round((Date.now() - created) / 60000));
+  
+  // Resolve recipient email through entry, contacts, local slips, or logged in user
+  let resolvedEmail = entry.email || getTokenContact(entry.token)?.email;
+  if (!resolvedEmail && typeof window !== 'undefined') {
+    try {
+      const latestRaw = localStorage.getItem('vd-latest-slip');
+      if (latestRaw) {
+        const latest = JSON.parse(latestRaw);
+        if (latest?.token?.toUpperCase() === entry.token.toUpperCase() && latest?.patientEmail && isValidEmail(latest.patientEmail)) {
+          resolvedEmail = latest.patientEmail.trim().toLowerCase();
+        }
+      }
+      if (!resolvedEmail) {
+        const slipsRaw = localStorage.getItem('vd-patient-slips');
+        if (slipsRaw) {
+          const slips = JSON.parse(slipsRaw);
+          const match = slips.find((s: any) => s.token?.toUpperCase() === entry.token.toUpperCase());
+          if (match?.patientEmail && isValidEmail(match.patientEmail)) {
+            resolvedEmail = match.patientEmail.trim().toLowerCase();
+          }
+        }
+      }
+    } catch {}
+
+    if (!resolvedEmail) {
+      resolvedEmail = getLoggedInPatientEmail() || undefined;
+    }
+  }
+
+  if (resolvedEmail) {
+    rememberTokenContact({
+      token: entry.token,
+      email: resolvedEmail,
+      patientName: entry.patientName,
+      department: dept.departmentName,
+      doctorName: dept.doctorName,
+      room: dept.roomNumber,
+      floor: String(dept.floor),
+    });
+  }
+
   void sendActivityEmail({
     event: 'visit_completed',
     token: entry.token,
+    to: resolvedEmail,
     vars: {
       patient_name: entry.patientName,
       token_no: entry.token,
@@ -662,12 +723,12 @@ export function notifyVisitCompleted(entry: QueueMailEntry, dept: DeptMailContex
       floor: formatFloor(dept.floor),
       feedback_link: `${appOrigin()}/patient/completion?token=${encodeURIComponent(entry.token)}`,
     },
-    idempotencyKey: `visit_completed:${entry.token}`,
+    idempotencyKey: `visit_completed:${entry.token}:${Date.now()}`,
   });
   const followUp = new Date();
   followUp.setDate(followUp.getDate() + 7);
   scheduleFollowUpReminder({
-    email: entry.email || getTokenContact(entry.token)?.email,
+    email: resolvedEmail,
     patientName: entry.patientName,
     doctorName: dept.doctorName,
     followUpDate: followUp,

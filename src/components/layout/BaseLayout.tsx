@@ -31,7 +31,7 @@ export function BaseLayout({ children, showHome = true, headerTitle, isStaff = f
   const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
+    <div className="min-h-screen flex flex-col bg-transparent text-[var(--color-text)]">
       {/* Skip link — first focusable element on every page */}
       <a href="#main-content" className="skip-link">
         {t('a11y.skip_to_content', 'Skip to main content')}
@@ -46,8 +46,8 @@ export function BaseLayout({ children, showHome = true, headerTitle, isStaff = f
         <AppHeader showHome={showHome} title={headerTitle} />
       )}
 
-      {/* Real-time floating in-page notification toasts */}
-      <NotificationToastContainer />
+      {/* Real-time floating in-page notification toasts (user / patient side only) */}
+      {!isStaff && <NotificationToastContainer />}
 
       {/* Content wrapper: 2-column with sidebar on lg+ for staff, full width otherwise */}
       {isStaff ? (

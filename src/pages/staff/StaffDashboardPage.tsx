@@ -119,10 +119,10 @@ export function StaffDashboardPage() {
     const cleanName = rawName.replace(/\s*\(Guest\)\s*/gi, '').trim();
 
     return (
-      <span className="font-bold text-[var(--color-text)] break-words">
+      <span className="font-bold text-[var(--color-text)] whitespace-nowrap inline-flex items-center">
         {cleanName}
         {isGuest && (
-          <span className="font-extrabold text-amber-700 dark:text-amber-400 ml-1.5 text-xs">
+          <span className="font-extrabold text-amber-700 dark:text-amber-400 ml-1.5 text-xs shrink-0">
             (Guest)
           </span>
         )}
@@ -681,15 +681,15 @@ export function StaffDashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[var(--color-surface-2)] border-b-2 border-[var(--color-border)] text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">
-                    <th scope="col" className="px-4 py-3.5">Token</th>
-                    <th scope="col" className="px-4 py-3.5">Patient Name</th>
-                    <th scope="col" className="px-4 py-3.5">Purpose</th>
-                    <th scope="col" className="px-4 py-3.5">A11y Needs</th>
-                    <th scope="col" className="px-4 py-3.5">Status</th>
-                    <th scope="col" className="px-4 py-3.5">Wait Time</th>
-                    <th scope="col" className="px-4 py-3.5">Priority Logic</th>
-                    <th scope="col" className="px-4 py-3.5 text-right">Actions</th>
+                  <tr className="bg-[var(--color-surface-2)] border-b-2 border-[var(--color-border)] text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)] h-12">
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap w-24">Token</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap min-w-[180px]">Patient Name</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap min-w-[170px]">Purpose</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap min-w-[130px]">A11y Needs</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap min-w-[140px]">Status</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap min-w-[110px]">Wait Time</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap min-w-[150px]">Priority Logic</th>
+                    <th scope="col" className="px-4 py-3 whitespace-nowrap text-right min-w-[190px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--color-border)] text-sm">
@@ -703,41 +703,48 @@ export function StaffDashboardPage() {
                       <tr
                         key={patient.id}
                         className={[
-                          'transition-colors hover:bg-[var(--color-surface-2)]',
+                          'h-16 transition-colors hover:bg-[var(--color-surface-2)]/70',
                           patient.isEmergency ? 'border-2 border-[var(--color-emergency-border)] bg-[var(--color-emergency-bg)] text-[var(--color-emergency-text)]' : '',
                           isInConsult ? 'bg-[var(--color-primary-50)] dark:bg-[var(--color-primary-950)] font-semibold' : '',
                         ].join(' ')}
                       >
                         {/* Token */}
-                        <td className="px-4 py-3.5">
-                          <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)]">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)] inline-block">
                             {patient.token}
                           </span>
                         </td>
 
-                        {/* Patient Name (single '(Guest)' tag, not duplicated) */}
-                        <td className="px-4 py-3.5">
-                          {renderPatientName(patient)}
-                          {patient.age && (
-                            <span className="text-xs text-[var(--color-text-muted)] ml-1">
-                              ({patient.age}y)
-                            </span>
-                          )}
+                        {/* Patient Name */}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 font-bold text-[var(--color-text)]">
+                            {renderPatientName(patient)}
+                            {patient.age && (
+                              <span className="text-xs font-normal text-[var(--color-text-muted)] shrink-0">
+                                ({patient.age}y)
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Purpose */}
-                        <td className="px-4 py-3.5 text-[var(--color-text-muted)] max-w-xs break-words">
-                          {patient.purpose || 'General Consultation'}
+                        <td className="px-4 py-3 text-[var(--color-text-muted)] whitespace-nowrap">
+                          <span
+                            className="block truncate max-w-[210px] text-xs sm:text-sm font-medium"
+                            title={patient.purpose || 'General Consultation'}
+                          >
+                            {patient.purpose || 'General Consultation'}
+                          </span>
                         </td>
 
                         {/* Accessibility Needs */}
-                        <td className="px-4 py-3.5">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {patient.accessibilityNeeds && patient.accessibilityNeeds.length > 0 ? (
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-nowrap">
                               {patient.accessibilityNeeds.map((need, idx) => (
                                 <span
                                   key={idx}
-                                  className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300"
+                                  className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-300 shrink-0 whitespace-nowrap"
                                 >
                                   <Accessibility size={12} className="shrink-0" aria-hidden="true" />
                                   <span>{need.replace('_', ' ')}</span>
@@ -745,12 +752,12 @@ export function StaffDashboardPage() {
                               ))}
                             </div>
                           ) : (
-                            <span className="text-xs text-[var(--color-text-muted)] font-mono">—</span>
+                            <span className="text-xs text-[var(--color-text-muted)] font-mono pl-1">—</span>
                           )}
                         </td>
 
                         {/* Live Status */}
-                        <td className="px-4 py-3.5">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <StatusBadge
                             variant={
                               patient.isEmergency
@@ -778,7 +785,7 @@ export function StaffDashboardPage() {
                         </td>
 
                         {/* Wait Time */}
-                        <td className="px-4 py-3.5 font-bold text-[var(--color-text)]">
+                        <td className="px-4 py-3 font-mono font-bold text-[var(--color-text)] whitespace-nowrap text-sm">
                           {isInConsult || isCompleted ? (
                             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">—</span>
                           ) : (
@@ -786,8 +793,8 @@ export function StaffDashboardPage() {
                           )}
                         </td>
 
-                        {/* Priority Explanation ("Why is this patient here?") */}
-                        <td className="px-4 py-3.5">
+                        {/* Priority Explanation */}
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="relative inline-block">
                             <button
                               type="button"
@@ -795,7 +802,7 @@ export function StaffDashboardPage() {
                                 setActiveWhyPopover(activeWhyPopover === patient.id ? null : patient.id)
                               }
                               className={[
-                                'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer',
+                                'inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap',
                                 explanation.level === 'emergency'
                                   ? 'bg-red-100 text-red-900 border-red-300'
                                   : explanation.level === 'priority'
@@ -804,7 +811,7 @@ export function StaffDashboardPage() {
                               ].join(' ')}
                               aria-label={`Why is patient ${patient.token} in this position?`}
                             >
-                              <HelpCircle size={13} />
+                              <HelpCircle size={13} className="shrink-0" />
                               <span>{explanation.badge}</span>
                             </button>
 
@@ -823,23 +830,23 @@ export function StaffDashboardPage() {
                                     <X size={14} />
                                   </button>
                                 </div>
-                                <p className="leading-snug">{explanation.reason}</p>
+                                <p className="leading-snug whitespace-normal">{explanation.reason}</p>
                               </div>
                             )}
                           </div>
                         </td>
 
                         {/* Row Actions */}
-                        <td className="px-4 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5 flex-nowrap">
                             {isInConsult ? (
-                              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                              <div className="flex items-center gap-1.5 flex-nowrap justify-end">
                                 <Button
                                   variant="secondary"
                                   size="sm"
                                   icon={<Check size={14} />}
                                   onClick={() => completePatientConsultation(patient.token)}
-                                  className="font-bold bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 whitespace-normal break-words"
+                                  className="font-bold bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100 !whitespace-nowrap shrink-0 !min-h-9 !py-1 !px-3 text-xs"
                                 >
                                   Completed
                                 </Button>
@@ -847,7 +854,7 @@ export function StaffDashboardPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => markPatientMissed(patient.token)}
-                                  className="font-bold text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 whitespace-normal break-words text-xs"
+                                  className="font-bold text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 !whitespace-nowrap shrink-0 !min-h-9 !py-1 !px-2.5 text-xs"
                                   title="Patient called but not present"
                                 >
                                   Missed Turn
@@ -855,29 +862,29 @@ export function StaffDashboardPage() {
                                 <div className="relative group">
                                   <button
                                     type="button"
-                                    className="px-2 py-1 text-xs font-bold rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]"
+                                    className="px-2.5 py-1 text-xs font-bold rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] whitespace-nowrap inline-flex items-center gap-1 h-9"
                                   >
                                     Next Step ▾
                                   </button>
-                                  <div className="hidden group-hover:flex group-focus-within:flex flex-col absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 shadow-xl rounded-xl p-1.5 text-xs min-w-36 text-left">
+                                  <div className="hidden group-hover:flex group-focus-within:flex flex-col absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 shadow-xl rounded-xl p-1.5 text-xs min-w-40 text-left">
                                     <button
                                       type="button"
                                       onClick={() => routePatientOnward(patient.token, 'Central Pathology Lab')}
-                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800"
+                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800 whitespace-nowrap"
                                     >
                                       → Route to Lab
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => routePatientOnward(patient.token, 'Radiology & X-Ray Wing')}
-                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800"
+                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800 whitespace-nowrap"
                                     >
                                       → Route to X-Ray
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => routePatientOnward(patient.token, 'Pharmacy Counter 3')}
-                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800"
+                                      className="px-2.5 py-1.5 text-left rounded-lg hover:bg-slate-100 font-medium text-slate-800 whitespace-nowrap"
                                     >
                                       → Route to Pharmacy
                                     </button>
@@ -885,13 +892,13 @@ export function StaffDashboardPage() {
                                 </div>
                               </div>
                             ) : !isCompleted ? (
-                              <>
+                              <div className="flex items-center gap-1.5 flex-nowrap justify-end">
                                 <Button
                                   variant="primary"
                                   size="sm"
                                   icon={<Play size={13} />}
                                   onClick={() => startPatientConsultation(patient.token)}
-                                  className="font-bold whitespace-normal break-words"
+                                  className="font-bold !whitespace-nowrap shrink-0 !min-h-9 !py-1 !px-3 text-xs"
                                 >
                                   Start
                                 </Button>
@@ -899,30 +906,30 @@ export function StaffDashboardPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => postponePatient(patient.token)}
-                                  className="border border-[var(--color-border)] font-bold whitespace-normal break-words"
+                                  className="border border-[var(--color-border)] font-bold !whitespace-nowrap shrink-0 !min-h-9 !py-1 !px-2.5 text-xs"
                                   title="Postpone patient"
                                 >
                                   Postpone
                                 </Button>
-                                <div className="flex flex-col gap-0.5">
+                                <div className="flex flex-col gap-0.5 shrink-0">
                                   <button
                                     type="button"
                                     onClick={() => movePatientQueue(patient.token, 'up')}
-                                    className="p-1 rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-border)] text-[var(--color-text)]"
+                                    className="p-1 rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-border)] text-[var(--color-text)] transition-colors"
                                     aria-label="Move patient up in queue"
                                   >
-                                    <ArrowUp size={12} />
+                                    <ArrowUp size={11} />
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => movePatientQueue(patient.token, 'down')}
-                                    className="p-1 rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-border)] text-[var(--color-text)]"
+                                    className="p-1 rounded bg-[var(--color-surface-2)] hover:bg-[var(--color-border)] text-[var(--color-text)] transition-colors"
                                     aria-label="Move patient down in queue"
                                   >
-                                    <ArrowDown size={12} />
+                                    <ArrowDown size={11} />
                                   </button>
                                 </div>
-                              </>
+                              </div>
                             ) : (
                               <span className="text-xs font-bold text-slate-400">Archived</span>
                             )}
@@ -956,66 +963,73 @@ export function StaffDashboardPage() {
                       : 'border-[var(--color-border)]',
                   ].join(' ')}
                 >
-                  {/* Token and Name */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)]">
+                  {/* Header: Token, Name & Status */}
+                  <div className="flex items-center justify-between gap-2.5 pb-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)] shrink-0">
                         {patient.token}
                       </span>
-                      <div className="font-bold text-base text-[var(--color-text)]">
+                      <div className="font-bold text-base text-[var(--color-text)] truncate flex items-center gap-1.5">
                         {renderPatientName(patient)}
+                        {patient.age && (
+                          <span className="text-xs font-normal text-[var(--color-text-muted)] shrink-0">
+                            ({patient.age}y)
+                          </span>
+                        )}
                       </div>
+                    </div>
+                    <div className="shrink-0">
+                      <StatusBadge
+                        variant={
+                          patient.isEmergency
+                            ? 'danger'
+                            : isInConsult
+                            ? 'success'
+                            : isTurnSoon
+                            ? 'info'
+                            : isCompleted
+                            ? 'neutral'
+                            : 'warning'
+                        }
+                        label={
+                          patient.isEmergency
+                            ? 'Emergency'
+                            : isInConsult
+                            ? 'In Consultation'
+                            : isTurnSoon
+                            ? 'Next in Line'
+                            : isCompleted
+                            ? 'Completed'
+                            : 'Waiting'
+                        }
+                      />
                     </div>
                   </div>
 
-                  {/* Badges in a wrapping row */}
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {/* Status Badge */}
-                    <StatusBadge
-                      variant={
-                        patient.isEmergency
-                          ? 'danger'
-                          : isInConsult
-                          ? 'success'
-                          : isTurnSoon
-                          ? 'info'
-                          : isCompleted
-                          ? 'neutral'
-                          : 'warning'
-                      }
-                      label={
-                        patient.isEmergency
-                          ? 'Emergency'
-                          : isInConsult
-                          ? 'In Consultation'
-                          : isTurnSoon
-                          ? 'Next in Line'
-                          : isCompleted
-                          ? 'Completed'
-                          : 'Waiting'
-                      }
-                    />
-
-                    {/* Wait Time Badge */}
-                    {!isCompleted && (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text)]">
-                        <Clock size={12} aria-hidden="true" />
-                        {isInConsult ? 'Attending now' : `Wait: ${patient.estimatedWaitMinutes}m`}
+                  {/* Clean 2-column info strip */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text)] font-medium">
+                      <Clock size={13} className="shrink-0 text-[var(--color-text-muted)]" />
+                      <span className="truncate">{isInConsult ? 'Attending now' : `Wait: ${patient.estimatedWaitMinutes}m`}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-muted)] font-medium">
+                      <span className="truncate" title={patient.purpose || 'General Consultation'}>
+                        {patient.purpose || 'General Consultation'}
                       </span>
-                    )}
+                    </div>
+                  </div>
 
-                    {/* Department / Purpose Badge */}
-                    <span className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-lg bg-[var(--color-surface-2)] border border-[var(--color-border)] text-[var(--color-text-muted)] truncate max-w-[200px]">
-                      {patient.purpose || 'General Consultation'}
+                  {/* Badges row: Priority & Accessibility */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-800 whitespace-nowrap">
+                      {explanation.badge}
                     </span>
-
-                    {/* Accessibility Badges */}
                     {patient.accessibilityNeeds && patient.accessibilityNeeds.length > 0 && (
                       <>
                         {patient.accessibilityNeeds.map((need, idx) => (
                           <span
                             key={idx}
-                            className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200 border border-blue-300 dark:border-blue-800 whitespace-nowrap"
                           >
                             <Accessibility size={12} className="shrink-0" aria-hidden="true" />
                             <span>{need.replace('_', ' ')}</span>
@@ -1023,11 +1037,6 @@ export function StaffDashboardPage() {
                         ))}
                       </>
                     )}
-
-                    {/* Priority Tag */}
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-800">
-                      {explanation.badge}
-                    </span>
                   </div>
 
                   {/* Plain language priority explanation */}

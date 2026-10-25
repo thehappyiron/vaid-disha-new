@@ -14,14 +14,73 @@ interface ToastItem extends PatientNotification {
   toastId: string;
 }
 
+function shouldShowToastToUser(toast: PatientNotification): boolean {
+  if (typeof window === 'undefined') return false;
+
+  // Strict check: never show on staff or admin pages
+  const path = window.location.pathname;
+  if (path.startsWith('/staff') || path.startsWith('/admin')) {
+    return false;
+  }
+
+  // Emergencies are broadcast to everyone on user side
+  if (toast.type === 'emergency') return true;
+
+  // If notification has no specific token, it's a general announcement
+  if (!toast.token) return true;
+
+  const targetToken = toast.token.toUpperCase().trim();
+
+  // 1. Check URL query param ?token=
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlToken = urlParams.get('token')?.toUpperCase().trim();
+  if (urlToken && urlToken === targetToken) return true;
+
+  // 2. Check vd-latest-slip
+  try {
+    const latestRaw = localStorage.getItem('vd-latest-slip');
+    if (latestRaw) {
+      const latest = JSON.parse(latestRaw);
+      if (latest?.token?.toUpperCase().trim() === targetToken) return true;
+    }
+  } catch {}
+
+  // 3. Check vd-patient-slips
+  try {
+    const slipsRaw = localStorage.getItem('vd-patient-slips');
+    if (slipsRaw) {
+      const slips = JSON.parse(slipsRaw);
+      if (Array.isArray(slips) && slips.some((s: any) => s.token?.toUpperCase().trim() === targetToken)) {
+        return true;
+      }
+    }
+  } catch {}
+
+  // 4. If user is currently browsing patient routes
+  if (path.startsWith('/patient/')) {
+    return true;
+  }
+
+  // 5. If user has no conflicting slips stored (e.g. demo testing on home page)
+  const hasOtherSlips = Boolean(localStorage.getItem('vd-latest-slip') || localStorage.getItem('vd-patient-slips'));
+  return !hasOtherSlips;
+}
+
 export function NotificationToastContainer() {
   const navigate = useNavigate();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  // Strict safeguard: never render on staff or admin pages
+  const isStaffRoute =
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/staff') || window.location.pathname.startsWith('/admin'));
+
   useEffect(() => {
+    if (isStaffRoute) return;
+
     const handleToastEvent = (e: Event) => {
       const customEvent = e as CustomEvent<PatientNotification>;
-      if (!customEvent.detail) return;
+      if (!customEvent.detail || !shouldShowToastToUser(customEvent.detail)) return;
 
       const item: ToastItem = {
         ...customEvent.detail,
@@ -40,9 +99,9 @@ export function NotificationToastContainer() {
     return () => {
       window.removeEventListener('vd_toast_notification', handleToastEvent);
     };
-  }, []);
+  }, [isStaffRoute]);
 
-  if (toasts.length === 0) return null;
+  if (isStaffRoute || toasts.length === 0) return null;
 
   return (
     <aside
