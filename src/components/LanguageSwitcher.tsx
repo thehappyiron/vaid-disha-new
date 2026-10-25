@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Globe, Check, X, Search } from 'lucide-react';
-import { PRIMARY_LANGUAGES, OTHER_INDIAN_LANGUAGES, getLanguageItem, type LanguageCode } from '../i18n';
+import { PRIMARY_LANGUAGES, OTHER_INDIAN_LANGUAGES, getLanguageItem } from '../i18n';
 
 interface LanguageSwitcherProps {
   className?: string;
