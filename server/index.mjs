@@ -30,7 +30,7 @@ YOUR PURPOSE AND SCOPE:
 STRICT BOUNDARY (MANDATORY):
 - ONLY refuse questions that are completely unrelated to the hospital, medical care, or the Vaid Disha web app (e.g. math puzzles like "what is 2+2", coding, recipes, general trivia, politics).
 - If and only if a question is totally unrelated to the hospital or app (like "what is 2+2"), politely say: "I am Vaid Disha, your hospital and patient navigation assistant. I can only assist with hospital services, departments, clinics, queue status, reports, facilities, and app navigation." (in the user's language).
-- Reply in the language of the user's query (English, Hindi, or Marathi).
+- Reply strictly in the language of the user's query or selected language.
 - Keep answers concise, clear, and under 60 words. Never prescribe medication or give clinical diagnoses.
 
 VERIFIED HOSPITAL DIRECTORY:
@@ -73,13 +73,55 @@ function isOffTopic(text) {
   return mathPattern.test(q) || indicMath.test(q) || randomTopics.test(q);
 }
 
+const INDIAN_LANGUAGE_NAMES = {
+  en: { name: 'English', native: 'English' },
+  hi: { name: 'Hindi', native: 'हिन्दी' },
+  mr: { name: 'Marathi', native: 'मराठी' },
+  te: { name: 'Telugu', native: 'తెలుగు' },
+  ta: { name: 'Tamil', native: 'தமிழ்' },
+  kn: { name: 'Kannada', native: 'ಕನ್ನಡ' },
+  as: { name: 'Assamese', native: 'অসমীয়া' },
+  bn: { name: 'Bengali', native: 'বাংলা' },
+  pa: { name: 'Punjabi', native: 'ਪੰਜਾਬੀ' },
+  or: { name: 'Odia', native: 'ଓଡ଼ିଆ' },
+  ml: { name: 'Malayalam', native: 'മലയാളം' },
+  gu: { name: 'Gujarati', native: 'ગુજરાતી' },
+};
+
 function getOffTopicRefusal(lang) {
-  const l = String(lang || 'en').toLowerCase();
+  const l = String(lang || 'en').toLowerCase().trim();
   if (l.startsWith('mr')) {
     return 'मी वैद्य दिशा आहे, आपला रुग्णालय सहाय्यक. मी केवळ रुग्णालय मार्गदर्शन, विभाग, रांगेची स्थिती, अहवाल आणि सुविधांशी संबंधित प्रश्नांमध्येच मदत करू शकतो.';
   }
   if (l.startsWith('hi')) {
     return 'मैं वैद्य दिशा हूँ, आपका अस्पताल सहायक। मैं केवल अस्पताल मार्गदर्शन, विभागों, कतार की स्थिति, रिपोर्ट और सुविधाओं से संबंधित प्रश्नों में ही मदद कर सकता हूँ।';
+  }
+  if (l.startsWith('te')) {
+    return 'నేను వైద్య దిశ, మీ ఆసుపత్రి సహాయకుడిని. నేను ఆసుపత్రి మార్గదర్శకత్వం, విభాగాలు, క్యూ స్థితి, నివేదికలు మరియు సౌకర్యాలకు సంబంధించిన ప్రశ్నలలో మాత్రమే సహాయం చేయగలను.';
+  }
+  if (l.startsWith('ta')) {
+    return 'நான் வைத்ய திஷா, உங்கள் மருத்துவமனை உதவியாளர். மருத்துவமனை வழிகாட்டுதல், துறைகள், வரிசை நிலை, அறிக்கைகள் மற்றும் வசதிகள் தொடர்பான கேள்விகளுக்கு மட்டுமே என்னால் உதவ முடியும்.';
+  }
+  if (l.startsWith('as')) {
+    return 'মই বৈদ্য দিশা, আপোনাৰ চিকিৎসালয় সহায়ক। মই কেৱল চিকিৎসালয়ৰ পথ নিৰ্দেশনা, বিভাগ, শাৰীৰ স্থিতি, প্ৰতিবেদন আৰু সুবিধাসমূহৰ বিষয়েহে সহায় কৰিব পাৰোঁ।';
+  }
+  if (l.startsWith('bn')) {
+    return 'আমি বৈদ্য দিশা, আপনার হাসপাতাল সহকারী। আমি শুধুমাত্র হাসপাতালের পথনির্দেশ, বিভাগ, লাইনের স্থিতি, রিপোর্ট এবং সুযোগ-সুবিধা সংক্রান্ত প্রশ্নে সাহায্য করতে পারি।';
+  }
+  if (l.startsWith('gu')) {
+    return 'હું વૈદ્ય દિશા છું, તમારો હોસ્પિટલ સહાયક. હું ફક્ત હોસ્પિટલ નેવિગેશન, વિભાગો, કતારની સ્થિતિ, રિપોર્ટ્સ અને સુવિધાઓ સંબંધિત પ્રશ્નોમાં જ મદદ કરી શકું છું.';
+  }
+  if (l.startsWith('kn')) {
+    return 'ನಾನು ವೈದ್ಯ ದಿಶಾ, ನಿಮ್ಮ ಆಸ್ಪತ್ರೆ ಸಹಾಯಕ. ನಾನು ಆಸ್ಪತ್ರೆಯ ಮಾರ್ಗದರ್ಶನ, ವಿಭಾಗಗಳು, ಸರದಿಯ ಸ್ಥಿತಿ, ವರದಿಗಳು ಮತ್ತು ಸೌಲಭ್ಯಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಮಾತ್ರ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ.';
+  }
+  if (l.startsWith('ml')) {
+    return 'ഞാൻ വൈദ്യ ദിശയാണ്, നിങ്ങളുടെ ആശുപത്രി സഹായി. ആശുപത്രി നാവിഗേഷൻ, ഡിപ്പാർട്ട്‌മെന്റുകൾ, ക്യൂ സ്റ്റാറ്റസ്, റിപ്പോർട്ടുകൾ, സൗകര്യങ്ങൾ എന്നിവയുമായി ബന്ധപ്പെട്ട ചോദ്യങ്ങളിൽ മാത്രമേ എനിക്ക് സഹായിക്കാനാകൂ.';
+  }
+  if (l.startsWith('pa')) {
+    return 'ਮੈਂ ਵੈਦ ਦਿਸ਼ਾ ਹਾਂ, ਤੁਹਾਡਾ ਹਸਪਤਾਲ ਸਹਾਇਕ। ਮੈਂ ਸਿਰਫ਼ ਹਸਪਤਾਲ ਮਾਰਗਦਰਸ਼ਨ, ਵਿਭਾਗਾਂ, ਕਤਾਰ ਸਥਿਤੀ, ਰਿਪੋਰਟਾਂ ਅਤੇ ਸਹੂਲਤਾਂ ਨਾਲ ਸੰਬੰਧਿਤ ਸਵਾਲਾਂ ਵਿੱਚ ਹੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ।';
+  }
+  if (l.startsWith('or')) {
+    return 'ମୁଁ ବୈଦ୍ୟ ଦିଶା, ଆପଣଙ୍କର ହସ୍ପିଟାଲ ସହାୟକ। ମୁଁ କେବଳ ହସ୍ପିଟାଲ ମାର୍ଗଦର୍ଶନ, ବିଭାଗ, ଧାଡ଼ିର ସ୍ଥିତି, ରିପୋର୍ଟ ଏବଂ ସୁବିଧା ସମ୍ବନ୍ଧୀୟ ପ୍ରଶ୍ନରେ ସାହାଯ୍ୟ କରିପାରିବି।';
   }
   return 'I am Vaid Disha, your hospital assistant. I can only assist with hospital navigation, departments, queue status, lab reports, and facilities.';
 }
@@ -173,7 +215,7 @@ async function sarvam(path, options = {}) {
 }
 
 async function callGroqChat(messages) {
-  const models = ['qwen/qwen3.8-27b', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b'];
+  const models = ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.8-27b'];
   for (const model of models) {
     try {
       const res = await fetch(`${groqBaseUrl}/chat/completions`, {
@@ -278,8 +320,19 @@ const server = createServer(async (request, response) => {
 - Location: ${context.currentLocation || 'Main Lobby'}
 - Accessibility: ${context.accessibilityNeeds?.length ? context.accessibilityNeeds.join(', ') : 'None'}`;
 
+      const langInfo = INDIAN_LANGUAGE_NAMES[language] || { name: 'English', native: 'English' };
+      const langDirective = langInfo.name === 'English'
+        ? '\nCRITICAL LANGUAGE DIRECTIVE: The user language is English. Reply purely in English.'
+        : `\nCRITICAL LANGUAGE DIRECTIVE (MANDATORY & ABSOLUTE):
+The user has chosen to communicate in ${langInfo.name} (${langInfo.native}).
+You MUST formulate your entire response EXCLUSIVELY and STRICTLY in ${langInfo.name} using its official native script (${langInfo.native}).
+- DO NOT reply in English or Hindi or any other language.
+- DO NOT use Romanized/Latin transliteration.
+- Write natural, polite, respectful, and fluent ${langInfo.name} in ${langInfo.native} script.
+- Keep the response concise, clear, and under 60 words.`;
+
       const messages = [
-        { role: 'system', content: hospitalPrompt + contextSnippet },
+        { role: 'system', content: hospitalPrompt + '\n' + langDirective + contextSnippet },
         ...safeHistory(requestBody.history),
         { role: 'user', content: message },
       ];
@@ -315,11 +368,7 @@ const server = createServer(async (request, response) => {
       }
 
       if (!replyText) {
-        replyText = language.startsWith('mr')
-          ? 'मी वैद्य दिशा आहे, आपला रुग्णालय सहाय्यक. मी केवळ रुग्णालय मार्गदर्शन, विभाग, रांगेची स्थिती, अहवाल आणि सुविधांशी संबंधित माहिती देऊ शकतो.'
-          : language.startsWith('hi')
-          ? 'मैं वैद्य दिशा हूँ, आपका अस्पताल सहायक। मैं केवल अस्पताल मार्गदर्शन, विभागों, कतार की स्थिति, रिपोर्ट और सुविधाओं से संबंधित सहायता कर सकता हूँ।'
-          : 'I am Vaid Disha, your hospital assistant. I can only assist with hospital navigation, departments, queue status, lab reports, and facilities.';
+        replyText = getOffTopicRefusal(language);
       }
 
       const actions = getActionsForQuery(message, replyText, context.slipId);

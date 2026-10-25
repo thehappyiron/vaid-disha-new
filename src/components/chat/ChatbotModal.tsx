@@ -90,7 +90,22 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
     return localStorage.getItem(SPEAK_REPLIES_KEY) === 'true';
   });
 
-  const currentLang = (i18n.language || 'en').toLowerCase().slice(0, 2);
+  const currentLang = (i18n.language || 'en').toLowerCase().trim();
+
+  const getGreetingText = (code: string): string => {
+    if (code.startsWith('hi')) return 'नमस्ते! मैं आपका वैद्य दिशा सहायक हूँ। आज मैं आपकी क्या सहायता कर सकता हूँ?';
+    if (code.startsWith('mr')) return 'नमस्कार! मी आपला वैद्य दिशा सहाय्यक आहे. मी आज आपल्याला कशी मदत करू शकतो?';
+    if (code.startsWith('te')) return 'నమస్కారం! నేను మీ వైద్య దిశ ఆసుపత్రి సహాయకుడిని. ఈరోజు నేను మీకు ఎలా సహాయం చేయగలను?';
+    if (code.startsWith('ta')) return 'வணக்கம்! நான் உங்கள் வைத்ய திஷா மருத்துவமனை உதவியாளர். இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?';
+    if (code.startsWith('as')) return 'নমস্কাৰ! মই আপোনাৰ বৈদ্য দিশা চিকিৎসালয় সহায়ক। আজি মই আপোনাক কেনেকৈ সহায় কৰিব পাৰোঁ?';
+    if (code.startsWith('bn')) return 'নমস্কার! আমি আপনার বৈদ্য দিশা হাসপাতাল সহকারী। আজ আমি আপনাকে কীভাবে সাহায্য করতে পারি?';
+    if (code.startsWith('gu')) return 'નમસ્તે! હું તમારો વૈદ્ય દિશા સહાયક છું. આજે હું તમને કેવી રીતે મદદ કરી શકું?';
+    if (code.startsWith('kn')) return 'ನಮಸ್ಕಾರ! ನಾನು ನಿಮ್ಮ ವೈದ್ಯ ದಿಶಾ ಆಸ್ಪತ್ರೆ ಸಹಾಯಕ. ಇಂದು ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?';
+    if (code.startsWith('ml')) return 'നമസ്കാരം! ഞാൻ നിങ്ങളുടെ വൈദ്യ ദിശ ആശുപത്രി സഹായിയാണ്. ഇന്ന് ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?';
+    if (code.startsWith('pa')) return 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡਾ ਵੈਦ ਦਿਸ਼ਾ ਹਸਪਤਾਲ ਸਹਾਇਕ ਹਾਂ। ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?';
+    if (code.startsWith('or')) return 'ନମସ୍କାର! ମୁଁ ଆପଣଙ୍କ ବୈଦ୍ୟ ଦିଶା ଡାକ୍ତରଖାନା ସହାୟକ। ଆଜି ମୁଁ ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି?';
+    return 'Hello! I am your Vaid Disha hospital assistant. How can I assist you today?';
+  };
 
   // Initialize greeting if empty
   useEffect(() => {
@@ -98,12 +113,7 @@ export const ChatbotModal: React.FC<ChatbotModalProps> = ({ isOpen, onClose }) =
       const initialGreeting: ChatMessage = {
         id: 'initial-greeting',
         sender: 'bot',
-        text:
-          currentLang === 'hi'
-            ? 'नमस्ते! मैं आपका वैद्य दिशा सहायक हूँ। आज मैं आपकी क्या सहायता कर सकता हूँ?'
-            : currentLang === 'mr'
-            ? 'नमस्कार! मी आपला वैद्य दिशा सहाय्यक आहे. मी आज आपल्याला कशी मदत करू शकतो?'
-            : 'Hello! I am your Vaid Disha hospital assistant. How can I assist you today?',
+        text: getGreetingText(currentLang),
         timestamp: Date.now(),
         language: currentLang,
         actions: [

@@ -48,7 +48,7 @@ export class GroqChatProvider implements ChatProvider {
 
     // 2. Load dynamic patient live context (room, queue position, wait time, doctor, etc.)
     const patientContext = await getLivePatientContext(req.context);
-    const systemPrompt = buildHospitalSystemPrompt(patientContext);
+    const systemPrompt = buildHospitalSystemPrompt(patientContext, lang);
 
     // 3. Format message history for Groq
     const historyMessages = (req.history || []).slice(-4).map((h) => ({

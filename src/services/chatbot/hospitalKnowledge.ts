@@ -8,6 +8,7 @@
 import type { ChatAction, ChatContext } from './types';
 import type { Slip } from '../../types';
 import { getPatientLiveDetails } from '../liveStore';
+import { getLanguageItem } from '../../i18n';
 
 export interface PatientLiveContext {
   patientName?: string;
@@ -81,18 +82,46 @@ export function checkOffTopicQuery(query: string, lang = 'en'): string | null {
 
   // Obvious math queries like "2+2", "what is 2+2", "calculate 4*5"
   const mathPattern = /^(what\s+is\s+)?(\d+\s*[\+\-\*\/xX÷]\s*\d+)|^\d+\s*[\+\-\*\/xX÷]\s*\d+/;
-  // Marathi math queries like "२ अधिक २", "२+२", etc.
+  // Indic math queries like "२ अधिक २", "२+२", etc.
   const indicMathPattern = /^[०-९\d\s\+\-\*\/xX÷=]+$|^(२\s*अधिक\s*२|2\s*plus\s*2)/i;
 
   // General random topics not related to a hospital
   const randomTopics = /^(who\s+is\s+(the\s+)?president|who\s+won|write\s+(a\s+)?code|write\s+(a\s+)?python|tell\s+me\s+a\s+joke|what\s+is\s+the\s+capital|recipe\s+for|weather\s+in)/i;
 
   if (mathPattern.test(q) || indicMathPattern.test(q) || randomTopics.test(q)) {
-    if (lang.startsWith('mr')) {
+    const code = (lang || 'en').toLowerCase().trim();
+    if (code.startsWith('mr')) {
       return 'मी वैद्य दिशा आहे, आपला रुग्णालय सहाय्यक. मी केवळ रुग्णालय मार्गदर्शन, विभाग, रांगेची स्थिती, अहवाल आणि सुविधांशी संबंधित प्रश्नांमध्येच मदत करू शकतो.';
     }
-    if (lang.startsWith('hi')) {
+    if (code.startsWith('hi')) {
       return 'मैं वैद्य दिशा हूँ, आपका अस्पताल सहायक। मैं केवल अस्पताल मार्गदर्शन, विभागों, कतार की स्थिति, रिपोर्ट और सुविधाओं से संबंधित प्रश्नों में ही मदद कर सकता हूँ।';
+    }
+    if (code.startsWith('te')) {
+      return 'నేను వైద్య దిశ, మీ ఆసుపత్రి సహాయకుడిని. నేను ఆసుపత్రి మార్గదర్శకత్వం, విభాగాలు, క్యూ స్థితి, నివేదికలు మరియు సౌకర్యాలకు సంబంధించిన ప్రశ్నలలో మాత్రమే సహాయం చేయగలను.';
+    }
+    if (code.startsWith('ta')) {
+      return 'நான் வைத்ய திஷா, உங்கள் மருத்துவமனை உதவியாளர். மருத்துவமனை வழிகாட்டுதல், துறைகள், வரிசை நிலை, அறிக்கைகள் மற்றும் வசதிகள் தொடர்பான கேள்விகளுக்கு மட்டுமே என்னால் உதவ முடியும்.';
+    }
+    if (code.startsWith('as')) {
+      return 'মই বৈদ্য দিশা, আপোনাৰ চিকিৎসালয় সহায়ক। মই কেৱল চিকিৎসালয়ৰ পথ নিৰ্দেশনা, বিভাগ, শাৰীৰ স্থিতি, প্ৰতিবেদন আৰু সুবিধাসমূহৰ বিষয়েহে সহায় কৰিব পাৰোঁ।';
+    }
+    if (code.startsWith('bn')) {
+      return 'আমি বৈদ্য দিশা, আপনার হাসপাতাল সহকারী। আমি শুধুমাত্র হাসপাতালের পথনির্দেশ, বিভাগ, লাইনের স্থিতি, রিপোর্ট এবং সুযোগ-সুবিধা সংক্রান্ত প্রশ্নে সাহায্য করতে পারি।';
+    }
+    if (code.startsWith('gu')) {
+      return 'હું વૈદ્ય દિશા છું, તમારો હોસ્પિટલ સહાયક. હું ફક્ત હોસ્પિટલ નેવિગેશન, વિભાગો, કતારની સ્થિતિ, રિપોર્ટ્સ અને સુવિધાઓ સંબંધિત પ્રશ્નોમાં જ મદદ કરી શકું છું.';
+    }
+    if (code.startsWith('kn')) {
+      return 'ನಾನು ವೈದ್ಯ ದಿಶಾ, ನಿಮ್ಮ ಆಸ್ಪತ್ರೆ ಸಹಾಯಕ. ನಾನು ಆಸ್ಪತ್ರೆಯ ಮಾರ್ಗದರ್ಶನ, ವಿಭಾಗಗಳು, ಸರದಿಯ ಸ್ಥಿತಿ, ವರದಿಗಳು ಮತ್ತು ಸೌಲಭ್ಯಗಳಿಗೆ ಸಂಬಂಧಿಸಿದ ಪ್ರಶ್ನೆಗಳಿಗೆ ಮಾತ್ರ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ.';
+    }
+    if (code.startsWith('ml')) {
+      return 'ഞാൻ വൈദ്യ ദിശയാണ്, നിങ്ങളുടെ ആശുപത്രി സഹായി. ആശുപത്രി നാവിഗേഷൻ, ഡിപ്പാർട്ട്‌മെന്റുകൾ, ക്യൂ സ്റ്റാറ്റസ്, റിപ്പോർട്ടുകൾ, സൗകര്യങ്ങൾ എന്നിവയുമായി ബന്ധപ്പെട്ട ചോദ്യങ്ങളിൽ മാത്രമേ എനിക്ക് സഹായിക്കാനാകൂ.';
+    }
+    if (code.startsWith('pa')) {
+      return 'ਮੈਂ ਵੈਦ ਦਿਸ਼ਾ ਹਾਂ, ਤੁਹਾਡਾ ਹਸਪਤਾਲ ਸਹਾਇਕ। ਮੈਂ ਸਿਰਫ਼ ਹਸਪਤਾਲ ਮਾਰਗਦਰਸ਼ਨ, ਵਿਭਾਗਾਂ, ਕਤਾਰ ਸਥਿਤੀ, ਰਿਪੋਰਟਾਂ ਅਤੇ ਸਹੂਲਤਾਂ ਨਾਲ ਸੰਬੰਧਿਤ ਸਵਾਲਾਂ ਵਿੱਚ ਹੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ।';
+    }
+    if (code.startsWith('or')) {
+      return 'ମୁଁ ବୈଦ୍ୟ ଦିଶା, ଆପଣଙ୍କ ଡାକ୍ତରଖାନା ସହାୟକ। ମୁଁ କେବଳ ଡାକ୍ତରଖାନା ନେଭିଗେସନ୍, ବିଭାଗ, ଧାଡ଼ି ସ୍ଥିତି ଏବଂ ସୁବିଧା ସମ୍ପର୍କିତ ପ୍ରଶ୍ନରେ ସାହାଯ୍ୟ କରିପାରିବି।';
     }
     return 'I am Vaid Disha, your hospital assistant. I can only assist with hospital navigation, departments, queue status, lab reports, and facilities.';
   }
@@ -101,9 +130,27 @@ export function checkOffTopicQuery(query: string, lang = 'en'): string | null {
 }
 
 /**
+ * Returns a strict language enforcement directive for the system prompt
+ */
+export function getLanguageDirective(targetLang: string): string {
+  const item = getLanguageItem(targetLang || 'en');
+  if (item.code === 'en') {
+    return `CRITICAL LANGUAGE DIRECTIVE: The user language is English. Reply purely in English.`;
+  }
+  return `CRITICAL LANGUAGE DIRECTIVE (MANDATORY & ABSOLUTE):
+The user has chosen to communicate in ${item.englishLabel} (${item.nativeLabel}).
+You MUST formulate your entire response EXCLUSIVELY and STICKLY in ${item.englishLabel} using its native script (${item.nativeLabel}).
+- DO NOT reply in English or Hindi or any other language.
+- DO NOT use Romanized/Latin alphabet transliteration.
+- Write natural, respectful, and fluent ${item.englishLabel} in ${item.nativeLabel} script.
+- Keep the response concise, clear, and under 60 words.`;
+}
+
+/**
  * Build the Comprehensive Hospital System Prompt for Groq AI
  */
-export function buildHospitalSystemPrompt(patientContext?: PatientLiveContext): string {
+export function buildHospitalSystemPrompt(patientContext?: PatientLiveContext, targetLang = 'en'): string {
+  const langDirective = getLanguageDirective(targetLang);
   const patientInfo = patientContext && patientContext.token
     ? `\nCURRENT PATIENT ACTIVE SESSION:
 - Patient Name: ${patientContext.patientName || 'Registered Patient'}
@@ -121,14 +168,16 @@ export function buildHospitalSystemPrompt(patientContext?: PatientLiveContext): 
 
   return `You are Vaid Disha (वैद्य दिशा), the smart AI hospital wayfinding and patient assistant for Vaid Disha Multi-Specialty Hospital and its web application.
 
+${langDirective}
+
 YOUR PURPOSE AND SCOPE:
 - You answer questions related to the hospital: medical departments, clinics, doctors, symptoms/reasons for visit, physical room locations, floors, facilities, queue wait times, visit slips, lab reports, and how to use the Vaid Disha web app (such as login, role selection, registering visits, and emergency routing).
 - For ANY hospital department (like Dermatology, Cardiology, etc.), doctor, room, symptom, or app feature (like login, registration, slip, reports), ALWAYS answer helpfully with the exact details.
 
 STRICT BOUNDARY (MANDATORY):
 - ONLY refuse questions that are completely unrelated to the hospital, medical care, or the Vaid Disha web app (e.g. math puzzles like "what is 2+2", coding, recipes, general trivia, politics).
-- If and only if a question is totally unrelated to the hospital or app (like "what is 2+2"), politely say: "I am Vaid Disha, your hospital and patient navigation assistant. I can only assist with hospital services, departments, clinics, queue status, reports, facilities, and app navigation." (in the user's language).
-- Reply in the language of the user's query (English, Hindi, or Marathi).
+- If and only if a question is totally unrelated to the hospital or app (like "what is 2+2"), politely refuse in the selected language.
+- ${langDirective}
 - Keep answers concise, clear, and under 60 words. Never prescribe medication or give clinical diagnoses.
 
 VERIFIED HOSPITAL DIRECTORY:

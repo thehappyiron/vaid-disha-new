@@ -3,13 +3,11 @@
  */
 
 import type { TextToSpeech, SpeechToText, VoiceOptions } from './types';
+import { getBcp47Language } from '../../i18n';
 
 function mapToBcp47(langCode?: string): string {
   if (!langCode) return 'en-IN';
-  const lower = langCode.toLowerCase();
-  if (lower.startsWith('hi')) return 'hi-IN';
-  if (lower.startsWith('mr')) return 'mr-IN';
-  return 'en-IN';
+  return getBcp47Language(langCode);
 }
 
 /**

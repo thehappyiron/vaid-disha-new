@@ -12,7 +12,7 @@ import {
   Building,
   Sparkles,
 } from 'lucide-react';
-import { LANGUAGES, type LanguageCode } from '../i18n';
+import { PRIMARY_LANGUAGES, OTHER_INDIAN_LANGUAGES, getBcp47Language, type LanguageCode } from '../i18n';
 import { BaseLayout } from '../components/layout';
 import { Button, StatusBadge, OptionCard } from '../components/ui';
 
@@ -30,7 +30,7 @@ export function RoleSelectionPage() {
   const [speakingCode, setSpeakingCode] = useState<string | null>(null);
 
   // Web Speech API text-to-speech for language names
-  const speakLanguage = (text: string, langCode: LanguageCode, e?: React.MouseEvent) => {
+  const speakLanguage = (text: string, langCode: string, e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
     }
@@ -39,7 +39,7 @@ export function RoleSelectionPage() {
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = langCode === 'hi' ? 'hi-IN' : langCode === 'mr' ? 'mr-IN' : 'en-US';
+      utterance.lang = getBcp47Language(langCode);
       utterance.rate = 0.85;
 
       setSpeakingCode(langCode);
@@ -86,9 +86,9 @@ export function RoleSelectionPage() {
             </p>
           </div>
 
-          {/* Large Language Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 my-2" role="group" aria-label={t('language_select.title')}>
-            {LANGUAGES.map((lang) => {
+          {/* Large Language Cards: English, Hindi, Marathi + Other Indian Languages Dropdown */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-2" role="group" aria-label={t('language_select.title')}>
+            {PRIMARY_LANGUAGES.map((lang) => {
               const isSelected = currentLang === lang.code;
               const isSpeaking = speakingCode === lang.code;
 
@@ -98,7 +98,7 @@ export function RoleSelectionPage() {
                   as="div"
                   selected={isSelected}
                   onClick={() => handleSelectLanguage(lang.code)}
-                  ariaLabel={`${lang.nativeLabel} - ${lang.code === 'en' ? 'English' : lang.code === 'hi' ? 'Hindi' : 'Marathi'}`}
+                  ariaLabel={`${lang.nativeLabel} - ${lang.englishLabel}`}
                   ariaPressed={isSelected}
                   icon={
                     <div className="font-bold text-base">
@@ -111,7 +111,7 @@ export function RoleSelectionPage() {
                       : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
                   }
                   title={lang.nativeLabel}
-                  description={lang.code === 'en' ? 'English' : lang.code === 'hi' ? 'Hindi' : 'Marathi'}
+                  description={lang.englishLabel}
                   rightSlot={
                     <button
                       type="button"
@@ -131,6 +131,96 @@ export function RoleSelectionPage() {
                 />
               );
             })}
+
+            {/* 4th Card: Dropdown for 9 Other Indian Languages */}
+            {(() => {
+              const activeOtherLang = OTHER_INDIAN_LANGUAGES.find((l) => l.code === currentLang);
+              const isOtherSelected = Boolean(activeOtherLang);
+              const isSpeakingOther = speakingCode === (activeOtherLang?.code || 'other');
+
+              return (
+                <div
+                  className={[
+                    'relative rounded-2xl p-4 transition-all border-2 flex flex-col justify-between gap-3',
+                    isOtherSelected
+                      ? 'bg-[var(--color-surface)] border-[var(--color-primary-500)] shadow-md ring-2 ring-[var(--color-primary-200)]'
+                      : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-primary-300)]',
+                  ].join(' ')}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={[
+                          'w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0',
+                          isOtherSelected
+                            ? 'bg-[var(--color-primary-500)] text-white'
+                            : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]',
+                        ].join(' ')}
+                      >
+                        {isOtherSelected ? <Check size={20} aria-hidden="true" /> : <Languages size={20} aria-hidden="true" />}
+                      </div>
+                      <div>
+                        <h2 className="font-bold text-base text-[var(--color-text)] leading-tight">
+                          {activeOtherLang ? activeOtherLang.nativeLabel : 'More Languages'}
+                        </h2>
+                        <p className="text-xs text-[var(--color-text-muted)] font-medium">
+                          {activeOtherLang ? activeOtherLang.englishLabel : `${OTHER_INDIAN_LANGUAGES.length} Indian Languages`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {activeOtherLang && (
+                      <button
+                        type="button"
+                        onClick={(e) => speakLanguage(activeOtherLang.nativeLabel, activeOtherLang.code, e)}
+                        className={[
+                          'btn btn-icon btn-sm rounded-full shrink-0 transition-transform active:scale-95',
+                          isSpeakingOther
+                            ? 'btn-primary animate-pulse'
+                            : 'btn-ghost border border-[var(--color-border)]',
+                        ].join(' ')}
+                        aria-label={`${t('language_select.listen_label')} ${activeOtherLang.nativeLabel}`}
+                        title={`${t('language_select.listen_label')} ${activeOtherLang.nativeLabel}`}
+                      >
+                        <Volume2 size={18} className={isSpeakingOther ? 'text-white' : 'text-[var(--color-primary-500)]'} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Accessible Select Dropdown with active other Indian languages */}
+                  <div className="mt-1">
+                    <label htmlFor="other-language-dropdown" className="sr-only">
+                      Select other Indian language
+                    </label>
+                    <div className="relative">
+                      <select
+                        id="other-language-dropdown"
+                        value={isOtherSelected ? currentLang : ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) handleSelectLanguage(val);
+                        }}
+                        className="w-full h-11 px-3 pr-8 rounded-xl bg-[var(--color-surface-2)] border border-[var(--color-border)] text-sm font-semibold text-[var(--color-text)] focus:outline-hidden focus:ring-2 focus:ring-[var(--color-primary-500)] cursor-pointer appearance-none"
+                      >
+                        <option value="" disabled>
+                          -- Choose Indian Language ({OTHER_INDIAN_LANGUAGES.length} Available) --
+                        </option>
+                        {OTHER_INDIAN_LANGUAGES.map((item) => (
+                          <option key={item.code} value={item.code} className="text-black bg-white dark:text-white dark:bg-neutral-900 py-1">
+                            {item.nativeLabel} ({item.englishLabel})
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-[var(--color-text-muted)]">
+                        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                          <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Action buttons */}

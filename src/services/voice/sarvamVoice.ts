@@ -10,6 +10,8 @@
 
 import type { TextToSpeech, SpeechToText, VoiceOptions } from './types';
 
+import { getBcp47Language } from '../../i18n';
+
 export class SarvamTTS implements TextToSpeech {
   private audio: HTMLAudioElement | null = null;
   private speaking = false;
@@ -35,11 +37,7 @@ export class SarvamTTS implements TextToSpeech {
     // language in which the user spoke, not merely the UI language.
     const language = /^[a-z]{2,3}-IN$/i.test(lang || '')
       ? String(lang)
-      : lang?.startsWith('hi')
-        ? 'hi-IN'
-        : lang?.startsWith('mr')
-          ? 'mr-IN'
-          : 'en-IN';
+      : getBcp47Language(lang || 'en');
     const cacheKey = `${language}:${text}`;
     try {
       let audioUrl = this.cache.get(cacheKey);
