@@ -80,6 +80,7 @@ export function PatientGuidancePage() {
 
   // Check mobility/wheelchair needs
   const hasMobilityNeeds =
+    new URLSearchParams(location.search).get('mobility') === 'step-free' ||
     slip?.accessibilityNeeds?.includes('wheelchair') ||
     slip?.accessibilityNeeds?.includes('walking_difficulty');
 
@@ -304,7 +305,7 @@ export function PatientGuidancePage() {
         {hasMobilityNeeds && (
           <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-300 rounded-xl text-blue-900 text-xs sm:text-sm font-semibold">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0" />
-            <span>Accessible route active: Step-free path using elevators only.</span>
+            <span>{t('guidance.step_free_route_active')}</span>
           </div>
         )}
 

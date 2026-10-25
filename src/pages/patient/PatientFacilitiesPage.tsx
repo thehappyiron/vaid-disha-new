@@ -67,12 +67,19 @@ export function PatientFacilitiesPage() {
     return filteredFacilities.filter((pin) => pin.floor === selectedFloor);
   }, [filteredFacilities, selectedFloor]);
 
-  // Handle "Take me to the nearest washroom"
-  const handleNearestWashroom = () => {
-    // Current user location defaults
-    const userLocation = localStorage.getItem('vd-last-location') || 'entrance-main';
+  // Keep step-free routing in the URL so the preference survives a reload.
+  const navigateToDestination = (destinationNodeId: string) => {
+    const startNodeId = localStorage.getItem('vd-last-location') || 'entrance-main';
+    const params = new URLSearchParams({ dest: destinationNodeId, start: startNodeId });
+    if (hasWheelchair) params.set('mobility', 'step-free');
 
-    // Prioritize accessible washrooms if user has wheelchair / walking difficulties
+    navigate(`/patient/guidance?${params.toString()}`, {
+      state: { destinationNodeId, startNodeId },
+    });
+  };
+
+  // Prioritize accessible washrooms for wheelchair and walking difficulties.
+  const handleNearestWashroom = () => {
     let targetWashroomId = 'washroom-f0';
     if (hasWheelchair) {
       targetWashroomId = selectedFloor === 1 ? 'washroom-f1-acc' : 'washroom-f0';
@@ -82,24 +89,15 @@ export function PatientFacilitiesPage() {
       else targetWashroomId = 'washroom-f2';
     }
 
-    navigate(`/patient/guidance?dest=${targetWashroomId}&start=${userLocation}`, {
-      state: {
-        destinationNodeId: targetWashroomId,
-        startNodeId: userLocation,
-      },
-    });
+    navigateToDestination(targetWashroomId);
   };
 
-  // Navigate to any selected facility
   const handleNavigateToFacility = (pin: FacilityPin) => {
-    const userLocation = localStorage.getItem('vd-last-location') || 'entrance-main';
-    navigate(`/patient/guidance?dest=${pin.nodeId}&start=${userLocation}`, {
-      state: {
-        destinationNodeId: pin.nodeId,
-        startNodeId: userLocation,
-      },
-    });
+    navigateToDestination(pin.nodeId);
   };
+
+  const getFloorLabel = (floor: number) =>
+    floor === 0 ? t('common.ground_floor') : t('facilities.floor_label', { floor });
 
   const getFilterIcon = (id: FacilityCategory) => {
     switch (id) {
@@ -125,7 +123,7 @@ export function PatientFacilitiesPage() {
   };
 
   return (
-    <BaseLayout headerTitle="Nearby Facilities">
+    <BaseLayout headerTitle={t('facilities.title')}>
       <div className="mx-auto w-full px-4 sm:px-6 py-4 md:py-6 max-w-3xl lg:max-w-5xl flex flex-col gap-5 sm:gap-6">
         {/* Header & Quick Action */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-[var(--color-border)]">
@@ -144,14 +142,14 @@ export function PatientFacilitiesPage() {
               size="lg"
               onClick={handleNearestWashroom}
               className="w-full sm:w-auto shadow-md flex items-center justify-center gap-2 text-sm sm:text-base font-black bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-600)]"
-              aria-label="Take me to the nearest washroom"
+              aria-label={t('facilities.take_nearest_washroom')}
             >
               <Sparkles size={18} />
               <span>{t('facilities.take_nearest_washroom', 'Take me to nearest washroom')}</span>
               {hasWheelchair && (
                 <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold ml-1 inline-flex items-center gap-1">
                   <Accessibility size={13} aria-hidden="true" />
-                  <span>Accessible</span>
+                  <span>{t('facilities.accessible')}</span>
                 </span>
               )}
             </Button>
@@ -163,7 +161,8 @@ export function PatientFacilitiesPage() {
           <div className="flex items-center gap-3 p-3.5 bg-blue-50 dark:bg-blue-950/40 border-2 border-blue-300 dark:border-blue-800 rounded-xl text-blue-900 dark:text-blue-100 text-sm font-semibold">
             <Accessibility size={22} className="text-blue-600 shrink-0" />
             <span>
-              <strong>Accessibility Active:</strong> Accessible washrooms with wide doors, grab bars, and step-free ramp access are prioritized for you.
+              <strong>{t('facilities.accessibility_active')}</strong>{' '}
+              {t('facilities.accessibility_notice')}
             </span>
           </div>
         )}
@@ -176,7 +175,7 @@ export function PatientFacilitiesPage() {
           <div
             className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin focus:outline-none"
             role="tablist"
-            aria-label="Facility categories"
+            aria-label={t('facilities.categories')}
           >
             {FACILITY_FILTER_OPTIONS.map((opt) => {
               const isSelected = activeCategory === opt.id;
@@ -225,7 +224,10 @@ export function PatientFacilitiesPage() {
               <span>{t('facilities.interactive_map', 'Floor Map & Facility Pins')}</span>
             </h2>
             <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-              Floor {selectedFloor} • {facilitiesOnCurrentFloor.length} pin(s)
+              {t('facilities.floor_pins', {
+                floor: getFloorLabel(selectedFloor),
+                count: facilitiesOnCurrentFloor.length,
+              })}
             </span>
           </div>
 
@@ -274,21 +276,24 @@ export function PatientFacilitiesPage() {
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base sm:text-lg font-black text-[var(--color-text)]">
-                      {selectedFacility.name}
+                      {t(selectedFacility.nameKey, { defaultValue: selectedFacility.name })}
                     </h3>
                     <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]">
-                      {selectedFacility.shapeLabel}
+                      {t(selectedFacility.shapeLabelKey, { defaultValue: selectedFacility.shapeLabel })}
                     </span>
                     {selectedFacility.isAccessible && (
                       <span className="text-xs px-2 py-0.5 rounded-md font-bold bg-green-100 text-green-900 border border-green-300 flex items-center gap-1.5">
                         <ShieldCheck size={13} aria-hidden="true" />
-                        <span>Accessible</span>
+                        <span>{t('facilities.accessible')}</span>
                         <Accessibility size={13} aria-hidden="true" />
                       </span>
                     )}
                   </div>
                   <p className="text-xs sm:text-sm text-[var(--color-text-muted)] font-medium mt-1">
-                    Floor {selectedFacility.floor} • Landmark: {selectedFacility.pillarCode || 'Central Block'}
+                    {t('facilities.floor_landmark', {
+                      floor: getFloorLabel(selectedFacility.floor),
+                      landmark: selectedFacility.pillarCode || t('facilities.central_block'),
+                    })}
                   </p>
                 </div>
               </div>
@@ -315,7 +320,7 @@ export function PatientFacilitiesPage() {
               {t('facilities.all_facilities_list', 'Facility Directory')}
             </h2>
             <span className="text-xs font-semibold text-[var(--color-text-muted)]">
-              Showing {filteredFacilities.length} facilities
+              {t('facilities.showing_facilities', { count: filteredFacilities.length })}
             </span>
           </div>
 
@@ -336,7 +341,7 @@ export function PatientFacilitiesPage() {
                 onClick={() => setActiveCategory('all')}
                 className="mt-2 font-bold"
               >
-                <span>Show All Facilities</span>
+                <span>{t('facilities.show_all')}</span>
               </Button>
             </div>
           ) : (
@@ -380,10 +385,10 @@ export function PatientFacilitiesPage() {
                       </div>
                       <div>
                         <h4 className="text-sm font-black text-[var(--color-text)] leading-snug">
-                          {fac.name}
+                          {t(fac.nameKey, { defaultValue: fac.name })}
                         </h4>
                         <span className="text-[11px] font-bold text-[var(--color-text-muted)]">
-                          {fac.shapeLabel}
+                          {t(fac.shapeLabelKey, { defaultValue: fac.shapeLabel })}
                         </span>
                       </div>
                     </div>
@@ -391,7 +396,7 @@ export function PatientFacilitiesPage() {
 
                   <div className="flex items-center justify-between text-xs pt-2 border-t border-[var(--color-border)]">
                     <span className="font-bold text-[var(--color-text-muted)]">
-                      Floor {fac.floor} {fac.pillarCode ? `• ${fac.pillarCode}` : ''}
+                      {getFloorLabel(fac.floor)} {fac.pillarCode ? `• ${fac.pillarCode}` : ''}
                     </span>
                     <button
                       type="button"
@@ -401,7 +406,7 @@ export function PatientFacilitiesPage() {
                       }}
                       className="text-[var(--color-primary-500)] hover:text-[var(--color-primary-600)] font-black flex items-center gap-1"
                     >
-                      <span>Take me</span>
+                      <span>{t('facilities.take_me')}</span>
                       <ArrowRight size={13} />
                     </button>
                   </div>
