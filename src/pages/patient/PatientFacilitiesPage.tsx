@@ -238,6 +238,7 @@ export function PatientFacilitiesPage() {
             pathNodes={[]}
             pathEdges={[]}
             showFacilityPins={true}
+            showMapFooter={false}
             selectedFacilityCategory={activeCategory}
             selectedFacilityId={selectedFacility?.id}
             onSelectFacility={(fac) => setSelectedFacility(fac)}
